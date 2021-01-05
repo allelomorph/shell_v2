@@ -1,0 +1,14 @@
+#!/bin/bash
+# v1 task 6 testing
+
+for file in scripts/t6-*; do
+    cat <(echo "-->script:") $file <(echo "---")
+    cat $file | sh
+    echo "-->$?"
+    cat $file | ./hsh
+    echo "-->$?"
+    diff <(cat $file | sh) <(cat $file | ./hsh)$
+
+    echo "-->return or ctrl+d to continue"
+    read
+done;

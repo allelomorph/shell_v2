@@ -16,8 +16,8 @@
 /* StrArrFromKVList: sub: _strlen strArrFree */
 /* KVListFromStrArr: std: (none) */
 /* KVListFromStrArr: sub: addKVListNode */
-/* addKVListNode: std: malloc !!!strndup */
-/* addKVListNode: sub: _strdup */
+/* addKVListNode: std: malloc */
+/* addKVListNode: sub: _strdup _strndup */
 
 /* addKVPair: std: malloc fprintf free */
 /* addKVPair: sub: _strdup */
@@ -113,8 +113,8 @@ kv_list *KVListFromStrArr(char **str_arr)
 }
 
 
-/* addKVListNode: std: malloc !!!strndup */
-/* addKVListNode: sub: _strdup */
+/* addKVListNode: std: malloc */
+/* addKVListNode: sub: _strdup _strndup */
 /* !!! may separate into KVPairFromStr and addToTail - currently overlaps with */
 /* addKVPair, and addToTail could be used with other SLL types */
 /* KVPairFromEqStr { newKVPair, addNodeToTail }*/
@@ -133,13 +133,13 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 	/* init new */
 	new->key = NULL;
 	new->value = NULL;
+
 	/* manually tokenize once since values can contain '=' */
 	for (i = 0; kv_str[i]; i++)
 	{
 		if (kv_str[i] == '=')
 		{
-/* !!! need own _strndup */
-			new->key = strndup(kv_str, i);
+			new->key = _strndup(kv_str, i);
 			new->value = _strdup(kv_str + i + 1);
 			break;
 		}

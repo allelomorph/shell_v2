@@ -160,7 +160,9 @@ void strArrFree(char **array)
 	{
 		for (i = 0; array[i]; i++)
 		{
+/*
 			printf("\t\t\tstrArrFree : freeing array[%i] @ %p\n", i, (void *)array[i]);
+*/
 			free(array[i]);
 		}
 		free(array);

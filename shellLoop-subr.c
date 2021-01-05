@@ -37,7 +37,6 @@ char *_readline(sh_state *state)
 	size_t buf_bytes = 0; /* must be intialized or segfault on getline */
 	bool tty;
 
-
 	tty = isatty(STDIN_FILENO);
 	if (tty)
 /* !!! eventually shell var PS1 */
@@ -68,9 +67,7 @@ char *_readline(sh_state *state)
 
 		return (NULL); /* signal end of loop to shellLoop */
 	}
-
 	input[read_bytes - 1] = '\0'; /* remove newline char from input */
-
 	return (input);
 }
 
@@ -135,7 +132,9 @@ void runCommand(char **args, char *line, sh_state *state)
 			else
 				state->exit_code = -1;
 		}
+/*
 		printf("\t\trunCommand3: child exit code:%i\n", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+*/
 		free(cmd_path);
 		break;
 	}
@@ -174,9 +173,9 @@ bool checkBuiltins(char **tokens, int token_count,
 		fprintf(stderr, "checkBuiltins: missing arguments\n");
 		return (false);
 	}
-
+/*
 	printf("\t\tcheckBuiltins: builtin:%s args:%s %s\n", tokens[0], tokens[1], token_count >= 2 ? tokens[2] : NULL);
-
+*/
 	/* env exit setenv unsetenv cd */
 	/* _env __exit _setenv _unsetenv _cd */
 

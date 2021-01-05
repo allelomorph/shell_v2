@@ -35,8 +35,9 @@ void shellLoop(sh_state *state)
 		printf("\tshellLoop: setScriptFds done\n");
 		*/
 		line = _readline(state);
+/*
 		printf("\tshellLoop: _readline: %s\n", line);
-
+*/
 	        trimComments(line, whtsp);
 		/*
 		if (!line)
@@ -46,13 +47,17 @@ void shellLoop(sh_state *state)
 			continue;
 		}
 		*/
+/*
 		printf("\tshellLoop: tokenizing\n");
+*/
 		if ((t_count = countTokens(line, whtsp, false)) > 0 &&
 		    (tokens = tokenize(t_count, line, whtsp, false)) != NULL)
 		{
+/*
 			printf("\tshellLoop: valid tokens found: ");
 		        prStrArrInLine(tokens);
 			printf("\n");
+*/
 /* !!! should builtin be changed to a return value to checkBuiltins? */
 /* !!! currently __exit doesn't free line or tokens */
 			if (!(checkBuiltins(tokens, t_count, line, state)))
@@ -63,13 +68,16 @@ void shellLoop(sh_state *state)
 /* !!! experiment with freeing line just before _readline */
 		if (line)
 		{
+/*
 			printf("\tshellLoop: freeing line @:%p\n", (void *)line);
+*/
 			free(line);
 		}
 
 	} while (line/* || init_script_EOF*/); /* freed pointers will not automatically == NULL */
+/*
 	printf("\tshellLoop: out of loop\n");
-
+*/
 }
 
 
@@ -197,16 +205,19 @@ int main(int argc, char **argv, char **env)
 	printf("   main: checkInitScript done\n");
 	*/
 /* !!! should open errors print shell loop 0 here, or loop count after executing ~/.hshrc ? */
-/*
+	/*
 	if (argc > 1) * sh simply ignores args after first *
 		checkArgScript(argv[1], &state);
+	*/
+/*
 	printf("   main: checkArgScript done\n");
 */
 	/* script check failures set exit code to 127 */
 	if (state.exit_code == 0)
 		shellLoop(&state);
-
+/*
 	printf("   main: shellLoop normal return\n");
+*/
 	freeShellState(&state);
 	return (state.exit_code);
 }

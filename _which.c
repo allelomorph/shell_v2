@@ -58,9 +58,9 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 			fprintf(stderr, "testExecPath: _strdup failure\n");
 			return (NULL);
 		}
-		/*
+/*
 		printf("\t\t\t\ttestExecPathA: test_path:%s\n", test_path);
-		*/
+*/
 	}
 	else
 	{
@@ -96,9 +96,10 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 		free(test_path);
 		test_path = NULL;
 	}
+/*
 	else
 		printf("\t\t\t\ttestExecPath4: test_path:%s access ok\n", test_path);
-
+*/
 	return (test_path);
 }
 
@@ -153,9 +154,9 @@ char *_which(char *cmd, sh_state *state)
 	/* no need to count or store tokens, first valid abs_path returned */
 	if ((token = strtok(PATH_cpy, ":")) != NULL)
 	{
-		/*
+/*
 		printf("\t\t\t_which3: PATH token:%s\n", token);
-		*/
+*/
 		if ((abs_path = testExecPath(token, cmd, state)) != NULL)
 		{
 			free(PATH_cpy);
@@ -164,9 +165,9 @@ char *_which(char *cmd, sh_state *state)
 	}
 	while ((token = strtok(NULL, ":")) != NULL)
 	{
-		/*
+/*
 		printf("\t\t\t_which3: PATH token:%s\n", token);
-		*/
+*/
 		if ((abs_path = testExecPath(token, cmd, state)) != NULL)
 		{
 			free(PATH_cpy);

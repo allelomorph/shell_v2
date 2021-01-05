@@ -125,14 +125,16 @@ int _setenv(char *var, char *value, sh_state *state)
 	{
 		if (temp->value)
 			free(temp->value);
-
+/*
 		printf("\t\t\t_setenv1: setting existing key:%s to :%s\n", temp->key, value);
-
+*/
 		temp->value = _strdup(value);
 	}
 	else
         {
+/*
 		printf("\t\t\t_setenv2: adding new key:%s with value:%s\n", var, value);
+*/
 		/* var not found */
 		if (addKVPair(&(state->env_vars), var, value) == NULL)
 /* !!! upgrade error return?? not standard sh error */
@@ -204,9 +206,9 @@ kv_list *checkPWD(sh_state *state)
 			}
 		}
 	}
-
+/*
 	printf("\t\t\t\tcheckPWD1: returning PWD as :%s\n", pwd->value);
-
+*/
 	return (pwd);
 }
 

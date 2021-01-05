@@ -110,7 +110,9 @@ char **tokenize(int t_count, char *line, char *delim, bool by_substr)
 			tokens[i] = strtok(line, delim);
 			if (!tokens[i])
 			{
+/*
 				printf("\t\ttokenize%i: freeing tokens @:%p\n", i, (void *)tokens);
+*/
 				free(tokens);
 				return (NULL);
 			}
@@ -120,7 +122,9 @@ char **tokenize(int t_count, char *line, char *delim, bool by_substr)
 			tokens[i] = strtok(NULL, delim);
 			if (!tokens[i])
 			{
+/*
 				printf("\t\ttokenize%i: freeing tokens @:%p\n", i, (void *)tokens);
+*/
 				free(tokens);
 				return (NULL);
 			}
