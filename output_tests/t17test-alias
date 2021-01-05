@@ -7,7 +7,7 @@ for file in scripts/t17-*; do
     echo "-->$?"
     cat $file | ./hsh
     echo "-->$?"
-    diff <(cat $file | sh) <(cat $file | ./hsh)$
+    diff <(cat $file | sh) <(cat $file | ./hsh)
 
     echo "-->return or ctrl+d to continue"
     read

@@ -86,7 +86,7 @@ char **StrArrFromKVList(kv_list *head)
 			return (NULL);
 		}
 /* !!! same single char concat as when prepeding paths (testExecPath) - popout into subr? */
-		sprintf(kv_pair, "%s/%s", temp->key, temp->value);
+		sprintf(kv_pair, "%s=%s", temp->key, temp->value);
 	        kv_pair[(k_len + v_len + 1)] = '\0';
 		str_arr[i] = kv_pair;
 		temp = temp->next;
