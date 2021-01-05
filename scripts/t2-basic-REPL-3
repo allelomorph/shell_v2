@@ -1,0 +1,3 @@
+cp /bin/ls hbtn_ls
+./hbtn_ls /var
+rm hbtn_ls

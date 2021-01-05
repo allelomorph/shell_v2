@@ -1,0 +1,2 @@
+alias ls_alias=/bin/ls
+ls_alias

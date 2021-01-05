@@ -1,0 +1,4 @@
+alias alias1=/bin/ls
+alias alias2=/bin/echo
+alias alias3=/bin/pwd
+alias

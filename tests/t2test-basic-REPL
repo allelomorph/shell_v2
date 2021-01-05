@@ -1,0 +1,14 @@
+#!/bin/bash
+# v1 task 2 testing
+
+for file in scripts/t2-*; do
+    cat <(echo "-->script:") $file <(echo "---")
+    cat $file | sh
+    echo "-->$?"
+    cat $file | ./hsh
+    echo "-->$?"
+    cat $file | valgrind ./hsh
+
+    echo "-->return or ctrl+d to continue"
+    read
+done;

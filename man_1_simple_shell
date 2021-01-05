@@ -1,0 +1,110 @@
+.TH man 1 "11 Apr 2020" "0.1" "Cascara"
+
+.SH NAME
+Cascara - a simple command line interface built in C
+
+.SH SYNOPSIS
+Interactive Mode:
+.B cascara
+.I command
+.R [args] ...
+.bb
+Non-Interactive Mode:
+.B echo
+.IR command or script
+.R | name of executable
+
+.SH DESCRIPTION
+.P
+Cascara is a very simple shell program capable of running commands that can be found in the PATH.
+.P
+It takes user input from stdin. If the input is a valid command, the output of that command is then printed to stdout and any errors to stderr. If the user's input is not a valid command, then Cascara prints the appropriate error message to stdout.
+
+.SS ADDITIONAL COMMANDS
+.TP
+.B
+Ctrl + D
+Exit the shell
+.TP
+.B
+exit
+Use the exit builtin to exit the shell
+.TP
+.B
+env
+Print all of the environmental variables
+
+.SH EXIT STATUS
+.TP
+.B
+0
+Success
+
+.TP
+.B
+-1
+Failure; should stay internal
+
+.TP
+.B
+127
+Command not found
+
+.SH ENVIRONMENT
+.BR PATH - "used to locate the command provided by the user"
+.BR PWD - "if the first element of PATH is blank, PWD is substituted"
+.bb
+All other environment variables are copied into an array at the beginning of the shell to facilitate manipulation in later versions. 
+
+.SH BUGS
+Not aware of any currently
+
+.SH EXAMPLE
+
+.SS Interactive Mode
+.EX
+Cascara $ ls -1a
+.
+..
+AUTHORS
+cascara.c
+ETC_help.c
+.git
+holberton.h
+hsh
+loop_help.c
+man_1_simple_shell
+README.md
+string_help.c
+_which.c
+Cascara $ exit
+.EE
+
+.SS Non-Interactive Mode
+.EX
+vagrant@vagrant-ubuntu-trusty-64:~/simple_shell$ echo "/bin/ls -fl" | ./hsh
+total 80
+-rw-rw-r--  1 vagrant vagrant  3269 Apr 17 02:34 cascara.c
+-rw-rw-r--  1 vagrant vagrant   164 Apr 17 03:58 AUTHORS
+-rw-rw-r--  1 vagrant vagrant  1279 Apr 17 14:30 man_1_simple_shell
+-rw-rw-r--  1 vagrant vagrant  4942 Apr 17 02:37 loop_help.c
+drwxrwxr-x  3 vagrant vagrant  4096 Apr 17 14:35 .
+-rw-rw-r--  1 vagrant vagrant  1110 Apr 17 02:34 ETC_help.c
+-rw-rw-r--  1 vagrant vagrant  2582 Apr 16 22:53 README.md
+-rw-rw-r--  1 vagrant vagrant  1900 Apr 17 02:34 holberton.h
+-rw-rw-r--  1 vagrant vagrant  2991 Apr 17 02:34 string_help.c
+drwxr-xr-x 17 vagrant vagrant  4096 Apr 17 14:39 ..
+drwxrwxr-x  8 vagrant vagrant  4096 Apr 17 14:34 .git
+-rw-rw-r--  1 vagrant vagrant  4485 Apr 17 02:34 _which.c
+-rwxrwxr-x  1 vagrant vagrant 18275 Apr 17 14:35 hsh
+vagrant@vagrant-ubuntu-trusty-64:~/simple_shell$
+.EE
+
+.SH NOTES
+This is the final project for students in the 1st trimester at Holberton.
+
+.SH AUTHOR
+Cynthia Taylor, Samuel Pomeroy
+
+.SH SEE ALSO
+.I sh(1)

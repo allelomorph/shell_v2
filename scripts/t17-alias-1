@@ -1,0 +1,3 @@
+alias ls_alias=/bin/ls
+alias ls_alias_alias=ls_alias
+ls_alias_alias
