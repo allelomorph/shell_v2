@@ -24,21 +24,29 @@
  */
 void shellLoop(sh_state *state)
 {
-	char *line = NULL, *whtsp = " \t\v"; /* full set " \t\n\v\f\r" */
+	char *line = NULL;
+/*
 	char **tokens = NULL;
 	int t_count;
+*/
+	st_list **tokens = NULL; /* eventaully rename to `tokens` */
 
 	do {
-		state->loop_count++;
+		state->loop_count++; /* later will happen in lineLexer only after no syntax error */
 		/*
 		setScriptFds(state);
 		printf("\tshellLoop: setScriptFds done\n");
 		*/
 		line = _readline(state);
+
+	        tokens = lineLexer(line);
+
+		testPrSublines(tokens);
+
+		freeSTList(tokens);
 /*
 		printf("\tshellLoop: _readline: %s\n", line);
 */
-	        trimComments(line, whtsp);
 		/*
 		if (!line)
 		{
@@ -50,9 +58,11 @@ void shellLoop(sh_state *state)
 /*
 		printf("\tshellLoop: tokenizing\n");
 */
-		if ((t_count = countTokens(line, whtsp, false)) > 0 &&
-		    (tokens = tokenize(t_count, line, whtsp, false)) != NULL)
+/*
+		if ((t_count = countTokens(line, WHTSPC, false)) > 0 &&
+		    (tokens = tokenize(t_count, line, WHTSPC, false)) != NULL)
 		{
+*/
 /*
 			printf("\tshellLoop: valid tokens found: ");
 		        prStrArrInLine(tokens);
@@ -60,11 +70,15 @@ void shellLoop(sh_state *state)
 */
 /* !!! should builtin be changed to a return value to checkBuiltins? */
 /* !!! currently __exit doesn't free line or tokens */
+/*
 			if (!(checkBuiltins(tokens, t_count, line, state)))
+*/
 /* currently runCommand will free all memory and exit directly on fork/wait failure */
+/*
 				runCommand(tokens, line, state);
 			free(tokens);
 		}
+*/
 /* !!! experiment with freeing line just before _readline */
 		if (line)
 		{

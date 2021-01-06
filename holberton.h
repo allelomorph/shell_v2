@@ -1,16 +1,30 @@
 #ifndef HOLBERTON_H
 #define HOLBERTON_H
 
+/* syntax token struct macros */
+#define ST_NONE     0
+#define ST_ONSCCS   1
+#define ST_ONFAIL   2
+#define ST_PIPE     3
+#define ST_RD_OUT   4
+#define ST_APPEND   5
+#define ST_RD_IN    6
+#define ST_HEREDOC  7
+#define ST_MACRO_CT 8
+
+#define WHTSPC " \t\v" /* full set " \t\n\v\f\r" */
+
 #include <errno.h>
 #include <stdbool.h>
 
-/* for testing */
+/* !!! only here for testing */
 #include <stdio.h>
 
 /* C standard library global variables */
-/* extern int errno;  deprecated for include errno.h */
-/* extern char **environ; not using since we need a manipulable copy */
+/* extern int errno;  deprecated for `#include <errno.h>` */
+/* extern char **environ; not used since we need a manipulable copy */
 
+/* used for envrionment, shell variables and aliases */
 typedef struct kv_list_s
 {
 	char *key;
@@ -18,10 +32,19 @@ typedef struct kv_list_s
 	struct kv_list_s *next;
 } kv_list;
 
+/* syntax token list */
+/* used for lexing */
+typedef struct st_list_s
+{
+	char *token;
+        size_t p_op; /* "preceding operator" - records syntax operator found to left of token */
+	struct st_list_s *next;
+} st_list;
+
 /* !!! needed to emulate sh error return when running scripts (syntax errors in a script would produce "<sname>: 1: <sname>: Syntax error: <delim> unexpected"*/
 /* alternately, exec and script name, stdinfd_bup could all be stored as shell vars */
 /**
- * everything you need to close the program from any subroutine
+ * information needed globally by most subroutines
  */
 typedef struct sh_state_s
 {
@@ -79,6 +102,17 @@ void trimComments(char *line, char *whtsp);
 int countTokens(char *input, char *delim, bool by_substr);
 char **tokenize(int t_count, char *line, char *delim, bool by_substr);
 char *strtokSubstr(char *str, char *delim);
+
+st_list **lineLexer(char *line);
+void lexByDelim(st_list *head, char *delim, size_t p_op_code);
+void lexByWhtSpc(st_list *head);
+void freeSublines(st_list **sublines);
+void freeSTList(st_list **head);
+st_list **lineToSublines(char *line);
+/* testing */
+void testPrSublines(st_list **sublines);
+
+
 
 
 /* scripts.c */
