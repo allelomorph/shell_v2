@@ -111,6 +111,7 @@ void freeSTList(st_list **head);
 st_list **lineToSublines(char *line);
 /* testing */
 void testPrSublines(st_list **sublines);
+void testPrSubline(st_list *subline);
 
 
 

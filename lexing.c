@@ -225,8 +225,9 @@ char *strtokSubstr(char *str, char *delim)
 st_list **lineLexer(char *line)
 {
 	st_list **sublines = NULL;
+/*
 	int i;
-
+*/
 	if (!line || !line[0])
 		return (NULL);
 
@@ -236,10 +237,11 @@ st_list **lineLexer(char *line)
 	/* divide into array of token lists by ';' */
 	sublines = lineToSublines(line);
 
-	printf("\tlineLexer: sublines @ %p\n", (void *)sublines);
+#ifdef ZZZ
+	printf("\tlineLexer: line:'%s' sublines @ %p\n", line, (void *)sublines);
 	for (i = 0; sublines[i]; i++)
 	{
-		printf("\tlineLexer: sublines[%i] @ %p\n", i, (void *)sublines[i]);
+		printf("\t   lineLexer: sublines[%i] @ %p\n", i, (void *)sublines[i]);
 		/* edit token lists to record && */
 		lexByDelim(sublines[i], "&&", ST_ONSCCS);
 
@@ -261,6 +263,7 @@ st_list **lineLexer(char *line)
 		/* edit token lists to record < */
 		lexByDelim(sublines[i], "<", ST_RD_IN);
 	}
+#endif
 
 	return (sublines);
 }
@@ -283,6 +286,7 @@ void lexByDelim(st_list *head, char *delim, size_t p_op_code)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
 	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
+	size_t t_len;
 
 	if (!head || !delim)
 		return;
@@ -291,9 +295,11 @@ void lexByDelim(st_list *head, char *delim, size_t p_op_code)
 	while (curr)
 	{
 	        token = curr->token;
+		t_len = _strlen(token);
+
 		first_subt = strtokSubstr(token, delim);
 		/* length is same if no delims found */
-		if (_strlen(first_subt) != _strlen(token))
+		if (_strlen(first_subt) != t_len)
 		{
 			temp = curr;
 			reentry = curr->next;
@@ -320,7 +326,11 @@ void lexByDelim(st_list *head, char *delim, size_t p_op_code)
 			curr->token = first_subt;
 		}
 		curr = curr->next; /* to next token, or NULL */
+		curr = reentry;
 	}
+
+	printf("\t\t\tlexByDelim: at end by %s:\n", delim);
+	testPrSubline(head);
 }
 
 /* redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
@@ -330,23 +340,41 @@ void lexByWhtSpc(st_list *head)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
 	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
+	size_t t_len;
 
 	if (!head)
 		return;
+/*
+	printf("\t\t\tlexByWhtSpc: at start:\n");
+	testPrSubline(head);
+*/
+	printf("\t\t\tlexByWhtSpc: at start head @ %p\n", (void *)head);
+
 
 	curr = head;
 	while (curr)
 	{
-	        token = curr->token;
+		token = curr->token;
+		t_len = _strlen(token);
+/*
+		printf("\t\t\tlexByWhtSpc: token:'%s'\n", token);
+*/
 		first_subt = strtok(token, WHTSPC);
+/*
+		printf("\t\t\tlexByWhtSpc: first_subt:'%s'\n", first_subt);
+*/
 		/* length is same if no delims found */
-		if (_strlen(first_subt) != _strlen(token))
+		if (first_subt && (_strlen(first_subt) != t_len))
 		{
 			temp = curr;
 			reentry = curr->next;
 			/* generate sublist (curr will eventually */
 			while ((subtoken = strtok(NULL, WHTSPC)) != NULL)
 			{
+/*
+				printf("\t\t\tlexByWhtSpc: subtoken:'%s'\n", subtoken);
+				printf("\t\t\tlexByWhtSpc: head @ %p curr @ %p reentry @ %p temp @ %p\n", (void *)head, (void *)curr, (void *)reentry, (void *)temp);
+*/
 				new = malloc(sizeof(st_list));
 				if (!new)
 				{
@@ -357,7 +385,9 @@ void lexByWhtSpc(st_list *head)
 				new->token = subtoken;
 				new->p_op = ST_NONE;
 				new->next = NULL;
-
+/*
+				printf("\t\t\tlexByWhtSpc: new @ %p\n", (void *)new);
+*/
 				temp->next = new;
 				temp = new;
 			}
@@ -365,9 +395,19 @@ void lexByWhtSpc(st_list *head)
 			temp->next = reentry;
 			/* not a total replacement, we reuse the original node to store the first subtoken */
 			curr->token = first_subt;
+			curr = reentry;
 		}
-		curr = curr->next; /* to next token, or NULL */
+		else
+			curr = curr->next; /* to next token, or NULL */
 	}
+
+	printf("\t\t\tlexByWhtSpc: at end:\n");
+	testPrSubline(head);
+
+/*
+	printf("\t\t\tlexByWhtSpc: at end head @ %p\n", (void *)head);
+*/
+
 }
 
 void freeSublines(st_list **sublines)
@@ -419,7 +459,7 @@ st_list **lineToSublines(char *line)
 	}
 	sublines[sl_ct] = NULL;
 
-	printf("\t\t\tlineToSublines: array of size %i + 1 allocated\n", sl_ct);
+	printf("\t\tlineToSublines: array of size %i + 1 allocated\n", sl_ct);
 
 	for (i = 0; i < sl_ct; i++)
 	{
@@ -440,12 +480,13 @@ st_list **lineToSublines(char *line)
 		new->next = NULL;
 		sublines[i] = new;
 
-		printf("\t\t\tlineToSublines: before lexByWhtSpc: sublines[%i] @ %p\n", i, (void *)sublines[i]);
+
+		printf("\t\tlineToSublines: before lexByWhtSpc: sublines[%i] @ %p: '%s'\n", i, (void *)sublines[i], (sublines[i])->token);
 
 		lexByWhtSpc(sublines[i]);
-
-		printf("\t\t\tlineToSublines: after lexByWhtSpc: sublines[%i] @ %p\n", i, (void *)sublines[i]);
-
+/*
+		printf("\t\tlineToSublines: after lexByWhtSpc: sublines[%i] @ %p: '%s'\n", i, (void *)sublines[i], (sublines[i])->token);
+*/
 	}
 
 	return (sublines);
@@ -480,6 +521,32 @@ void testPrSublines(st_list **sublines)
 		}
 	}
 }
+
+void testPrSubline(st_list *subline)
+{
+	st_list *temp = NULL;
+	char *p_ops[] = {
+		"ST_NONE",
+		"ST_ONSCCS",
+		"ST_ONFAIL",
+		"ST_PIPE",
+		"ST_RD_OUT",
+		"ST_APPEND",
+		"ST_RD_IN",
+		"ST_HEREDOC",
+		"ST_MACRO_CT"
+	};
+
+	printf("   test print of subline @ %p\n", (void *)subline);
+	temp = subline;
+	while (temp)
+	{
+		printf("\t\ttoken @ %p:'%s' p_op:%s\n", (void *)temp, temp->token, p_ops[temp->p_op]);
+		temp = temp->next;
+	}
+}
+
+
 
 /* syntax token struct macros */
 /*

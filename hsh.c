@@ -39,11 +39,13 @@ void shellLoop(sh_state *state)
 		*/
 		line = _readline(state);
 
-	        tokens = lineLexer(line);
+		if (line)
+		{
+			tokens = lineLexer(line);
 
-		testPrSublines(tokens);
 
-		freeSTList(tokens);
+			freeSTList(tokens);
+		}
 /*
 		printf("\tshellLoop: _readline: %s\n", line);
 */
