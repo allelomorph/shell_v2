@@ -222,67 +222,121 @@ char *strtokSubstr(char *str, char *delim)
 }
 
 
-st_list **lineLexer(char *line)
+st_list *lineLexer(char *line)
 {
-	st_list **sublines = NULL;
-/*
-	int i;
-*/
+	st_list *head = NULL;
+
 	if (!line || !line[0])
 		return (NULL);
 
-	/* truncate comments */
 	trimComments(line, WHTSPC);
 
-	/* divide into array of token lists by ';' */
-	sublines = lineToSublines(line);
-
-#ifdef ZZZ
-	printf("\tlineLexer: line:'%s' sublines @ %p\n", line, (void *)sublines);
-	for (i = 0; sublines[i]; i++)
+	/* start token list with one node containing line */
+	head = malloc(sizeof(st_list));
+	if (!head)
 	{
-		printf("\t   lineLexer: sublines[%i] @ %p\n", i, (void *)sublines[i]);
-		/* edit token lists to record && */
-		lexByDelim(sublines[i], "&&", ST_ONSCCS);
-
-		/* edit token lists to record || */
-		lexByDelim(sublines[i], "||", ST_ONFAIL);
-
-		/* edit token lists to record | */
-		lexByDelim(sublines[i], "|", ST_PIPE);
-
-		/* edit token lists to record >> */
-		lexByDelim(sublines[i], ">>", ST_APPEND);
-
-		/* edit token lists to record << */
-		lexByDelim(sublines[i], "<<", ST_HEREDOC);
-
-		/* edit token lists to record > */
-		lexByDelim(sublines[i], ">", ST_RD_OUT);
-
-		/* edit token lists to record < */
-		lexByDelim(sublines[i], "<", ST_RD_IN);
+		fprintf(stderr, "lineLexer: malloc failure\n");
+		return (NULL);
 	}
-#endif
+	head->token = line;
+	head->p_op = ST_NONE;
+	head->next = NULL;
 
-	return (sublines);
+/* !!! can we make this a loop that calls enumerated array of args? */
+	/* subdivide token list to record ; occurances */
+	lexByDelim(head, ";", ST_CMD_BRK);
+	/* subdivide token list to record && occurances */
+	lexByDelim(head, "&&", ST_ONSCCS);
+	/* subdivide token list to record || occurances */
+	lexByDelim(head, "||", ST_ONFAIL);
+	/* subdivide token list to record | occurances */
+	lexByDelim(head, "|", ST_PIPE);
+	/* subdivide token list to record >> occurances */
+	lexByDelim(head, ">>", ST_APPEND);
+	/* subdivide token list to record > occurances */
+	lexByDelim(head, ">", ST_RD_OUT);
+	/* subdivide token list to record << occurances */
+	lexByDelim(head, "<<", ST_HEREDOC);
+	/* subdivide token list to record < occurances */
+	lexByDelim(head, "<", ST_RD_IN);
+	/* trim whitespace last, potentially NULL token->token */
+	lexByWhtSpc(head);
+
+	return (head);
 }
 
 /* syntax token struct macros */
 /*
-#define ST_NONE     0
-#define ST_ONSCCS   1
-#define ST_ONFAIL   2
-#define ST_PIPE     3
-#define ST_RD_OUT   4
-#define ST_APPEND   5
-#define ST_RD_IN    6
-#define ST_HEREDOC  7
-#define ST_MACRO_CT 8
+ST_NONE     0
+ST_CMD_BRK  1
+ST_ONSCCS   2
+ST_ONFAIL   3
+ST_PIPE     4
+ST_RD_OUT   5
+ST_APPEND   6
+ST_RD_IN    7
+ST_HEREDOC  8
+ST_MACRO_CT 9
 */
 
 /* parser will put st_lists into CMD structs and return syntax errors/or advance loop count on success */
-void lexByDelim(st_list *head, char *delim, size_t p_op_code)
+int lexByDelim(st_list *head, char *delim, size_t p_op_code)
+{
+	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
+	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
+	size_t t_len;
+
+	if (!head || !delim)
+		return (1);
+
+	curr = head;
+	while (curr && curr)
+	{
+	        token = curr->token;
+/*
+		printf("\t\tlexByDelim: token @ %p:'%s'\n", (void *)token, token);
+*/
+		t_len = _strlen(token);
+		first_subt = strtokSubstr(token, delim);
+/*
+		printf("\t\tlexByDelim: first_subt @ %p:'%s'\n", (void *)first_subt, first_subt);
+*/
+		/* length is same if no delims found */
+		if (first_subt != NULL && _strlen(first_subt) != t_len)
+		{
+			temp = curr;
+			reentry = curr->next;
+			while ((subtoken = strtokSubstr(NULL, delim)) != NULL)
+			{ /* generate sublist */
+				new = malloc(sizeof(st_list));
+				if (!new)
+				{
+					fprintf(stderr, "lexByDelim: malloc failure\n");
+					return (1);
+				}
+				new->token = subtoken;
+				new->p_op = p_op_code;
+				new->next = NULL;
+				temp->next = new;
+				temp = new;
+			}
+			temp->next = reentry; /* sublist ends, splice back in */
+			curr->token = first_subt; /* reuse orig start node */
+			curr = reentry; /* continue search after splice */
+		}
+		else
+			curr = curr->next;
+	}
+/*
+	printf("lexByDelim: success\n");
+*/
+	return (0);
+}
+
+#ifdef ZZZ
+/* 2nd draft attempt at generalizing lexByDelim to work with both strtoks */
+/* parser will put st_lists into CMD structs and return syntax errors/or advance loop count on success */
+void agn_lexByDelim(st_list *head, char *delim, size_t p_op_code, char *(*tokenizer)(char *, char *))
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
 	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
@@ -297,20 +351,20 @@ void lexByDelim(st_list *head, char *delim, size_t p_op_code)
 	        token = curr->token;
 		t_len = _strlen(token);
 
-		first_subt = strtokSubstr(token, delim);
+		first_subt = tokenizer(token, delim);
+
 		/* length is same if no delims found */
 		if (_strlen(first_subt) != t_len)
 		{
 			temp = curr;
 			reentry = curr->next;
 			/* generate sublist (curr will eventually */
-			while ((subtoken = strtokSubstr(NULL, delim)) != NULL)
+			while ((subtoken = tokenizer(NULL, delim)) != NULL)
 			{
 				new = malloc(sizeof(st_list));
 				if (!new)
 				{
 					fprintf(stderr, "lexByDelim: malloc failure\n");
-					/* loop freeSTList(sublines) */
 					return;
 				}
 				new->token = subtoken;
@@ -324,17 +378,17 @@ void lexByDelim(st_list *head, char *delim, size_t p_op_code)
 			temp->next = reentry;
 			/* not a total replacement, we reuse the original node to store the first subtoken */
 			curr->token = first_subt;
+			curr = reentry;
 		}
-		curr = curr->next; /* to next token, or NULL */
-		curr = reentry;
+		else
+			curr = curr->next;
 	}
-
-	printf("\t\t\tlexByDelim: at end by %s:\n", delim);
-	testPrSubline(head);
 }
+#endif
+
 
 /* redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
-/* in simpler tests I can pass a char *(*tokenizer)(char *, const char *) pointer, */
+/* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
 /* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
 void lexByWhtSpc(st_list *head)
 {
@@ -348,8 +402,9 @@ void lexByWhtSpc(st_list *head)
 	printf("\t\t\tlexByWhtSpc: at start:\n");
 	testPrSubline(head);
 */
+/*
 	printf("\t\t\tlexByWhtSpc: at start head @ %p\n", (void *)head);
-
+*/
 
 	curr = head;
 	while (curr)
@@ -401,24 +456,10 @@ void lexByWhtSpc(st_list *head)
 			curr = curr->next; /* to next token, or NULL */
 	}
 
-	printf("\t\t\tlexByWhtSpc: at end:\n");
-	testPrSubline(head);
-
 /*
 	printf("\t\t\tlexByWhtSpc: at end head @ %p\n", (void *)head);
 */
 
-}
-
-void freeSublines(st_list **sublines)
-{
-	st_list **temp = sublines;
-
-	while (temp)
-	{
-		freeSTList(temp);
-		temp++;
-	}
 }
 
 void freeSTList(st_list **head)
@@ -437,6 +478,68 @@ void freeSTList(st_list **head)
 	}
 	*head = NULL;
 }
+
+void testPrSTList(st_list *head)
+{
+	st_list *temp = NULL;
+	char *p_ops[] = {
+		"ST_NONE",
+		"ST_CMD_BRK",
+		"ST_ONSCCS",
+		"ST_ONFAIL",
+		"ST_PIPE",
+		"ST_APPEND",
+		"ST_RD_OUT",
+		"ST_HEREDOC",
+		"ST_RD_IN",
+		"ST_MACRO_CT"
+	};
+
+	printf("   test print of subline @ %p\n", (void *)head);
+	temp = head;
+	while (temp)
+	{
+		printf("\t\ttoken @ %p:'%s' p_op:%s\n", (void *)temp, temp->token, p_ops[temp->p_op]);
+		temp = temp->next;
+	}
+}
+
+
+/* syntax token struct macros */
+/*
+ST_NONE     0
+ST_CMD_BRK  1
+ST_ONSCCS   2
+ST_ONFAIL   3
+ST_PIPE     4
+ST_APPEND   5
+ST_RD_OUT   6
+ST_HEREDOC  7
+ST_RD_IN    8
+ST_MACRO_CT 9
+*/
+
+
+/*
+st list insert(node, delim)
+
+save orig node pointer
+save pointer to node before orig
+
+
+tokenize token string by new delimiter into a new st list
+if strtokSubtr returns anything after first call (there are subtokens)
+then create new sublist node for each return
+else return orig
+
+if new list head != orig node
+prev->next = head of new list
+tail of new list->next = orig->next
+
+free orig
+*/
+
+#ifdef ZZZ
 
 st_list **lineToSublines(char *line)
 {
@@ -463,7 +566,7 @@ st_list **lineToSublines(char *line)
 
 	for (i = 0; i < sl_ct; i++)
 	{
-	        new = malloc(sizeof(st_list) * 1);
+		new = malloc(sizeof(st_list) * 1);
 		if (!new)
 		{
 			fprintf(stderr, "lineToSublines: malloc failure\n");
@@ -473,7 +576,7 @@ st_list **lineToSublines(char *line)
 
 		if (i == 0)
 			new->token = strtokSubstr(line, ";");
-	        else
+		else
 			new->token = strtokSubstr(NULL, ";");
 
 		new->p_op = ST_NONE;
@@ -485,97 +588,11 @@ st_list **lineToSublines(char *line)
 
 		lexByWhtSpc(sublines[i]);
 /*
-		printf("\t\tlineToSublines: after lexByWhtSpc: sublines[%i] @ %p: '%s'\n", i, (void *)sublines[i], (sublines[i])->token);
+  printf("\t\tlineToSublines: after lexByWhtSpc: sublines[%i] @ %p: '%s'\n", i, (void *)sublines[i], (sublines[i])->token);
 */
 	}
 
 	return (sublines);
 }
 
-
-void testPrSublines(st_list **sublines)
-{
-	st_list *temp = NULL;
-	int i;
-	char *p_ops[] = {
-		"ST_NONE",
-		"ST_ONSCCS",
-		"ST_ONFAIL",
-		"ST_PIPE",
-		"ST_RD_OUT",
-		"ST_APPEND",
-		"ST_RD_IN",
-		"ST_HEREDOC",
-		"ST_MACRO_CT"
-	};
-
-	printf("   test print of sublines @ %p\n", (void *)sublines);
-	for (i = 0; sublines[i]; i++)
-	{
-		printf("\tsublines[%i]:\n", i);
-		temp = sublines[i];
-		while (temp)
-		{
-			printf("\t\ttoken:%s p_op:%s\n", (sublines[i])->token, p_ops[(sublines[i])->p_op]);
-			temp = temp->next;
-		}
-	}
-}
-
-void testPrSubline(st_list *subline)
-{
-	st_list *temp = NULL;
-	char *p_ops[] = {
-		"ST_NONE",
-		"ST_ONSCCS",
-		"ST_ONFAIL",
-		"ST_PIPE",
-		"ST_RD_OUT",
-		"ST_APPEND",
-		"ST_RD_IN",
-		"ST_HEREDOC",
-		"ST_MACRO_CT"
-	};
-
-	printf("   test print of subline @ %p\n", (void *)subline);
-	temp = subline;
-	while (temp)
-	{
-		printf("\t\ttoken @ %p:'%s' p_op:%s\n", (void *)temp, temp->token, p_ops[temp->p_op]);
-		temp = temp->next;
-	}
-}
-
-
-
-/* syntax token struct macros */
-/*
-#define ST_NONE     0
-#define ST_ONSCCS   1
-#define ST_ONFAIL   2
-#define ST_PIPE     3
-#define ST_RD_OUT   4
-#define ST_APPEND   5
-#define ST_RD_IN    6
-#define ST_HEREDOC  7
-#define ST_MACRO_CT 8
-*/
-
-/*
-st list insert(node, delim)
-
-save orig node pointer
-save pointer to node before orig
-
-
-tokenize token string by new delimiter into a new st list
-if strtokSubtr returns anything after first call (there are subtokens)
-then create new sublist node for each return
-else return orig
-
-if new list head != orig node
-prev->next = head of new list
-tail of new list->next = orig->next
-
-free orig
-*/
+#endif

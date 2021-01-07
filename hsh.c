@@ -29,7 +29,7 @@ void shellLoop(sh_state *state)
 	char **tokens = NULL;
 	int t_count;
 */
-	st_list **tokens = NULL; /* eventaully rename to `tokens` */
+	st_list *s_tokens = NULL; /* eventaully rename to `tokens` */
 
 	do {
 		state->loop_count++; /* later will happen in lineLexer only after no syntax error */
@@ -41,10 +41,11 @@ void shellLoop(sh_state *state)
 
 		if (line)
 		{
-			tokens = lineLexer(line);
+			s_tokens = lineLexer(line);
 
+			testPrSTList(s_tokens);
 
-			freeSTList(tokens);
+			freeSTList(&s_tokens);
 		}
 /*
 		printf("\tshellLoop: _readline: %s\n", line);
