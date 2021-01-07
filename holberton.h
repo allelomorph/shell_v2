@@ -1,16 +1,18 @@
 #ifndef HOLBERTON_H
 #define HOLBERTON_H
 
+/* use typedef enum? */
 /* syntax token struct macros */
 #define ST_NONE     0
-#define ST_ONSCCS   1
-#define ST_ONFAIL   2
-#define ST_PIPE     3
-#define ST_RD_OUT   4
+#define ST_CMD_BRK  1
+#define ST_ONSCCS   2
+#define ST_ONFAIL   3
+#define ST_PIPE     4
 #define ST_APPEND   5
-#define ST_RD_IN    6
+#define ST_RD_OUT   6
 #define ST_HEREDOC  7
-#define ST_MACRO_CT 8
+#define ST_RD_IN    8
+#define ST_MACRO_CT 9
 
 #define WHTSPC " \t\v" /* full set " \t\n\v\f\r" */
 
@@ -98,21 +100,21 @@ void removeKVPair(kv_list **head, char *key);
 
 
 /* lexing.c */
-void trimComments(char *line, char *whtsp);
+/* countTokens and tokenize now vestigial unless for testing */
 int countTokens(char *input, char *delim, bool by_substr);
 char **tokenize(int t_count, char *line, char *delim, bool by_substr);
+
+st_list *lineLexer(char *line);
+void trimComments(char *line, char *whtsp);
+int lexByDelim(st_list *head, char *delim, size_t p_op_code);
+int lexByWhtSpc(st_list *head);
 char *strtokSubstr(char *str, char *delim);
 
-st_list **lineLexer(char *line);
-void lexByDelim(st_list *head, char *delim, size_t p_op_code);
-void lexByWhtSpc(st_list *head);
-void freeSublines(st_list **sublines);
-void freeSTList(st_list **head);
-st_list **lineToSublines(char *line);
-/* testing */
-void testPrSublines(st_list **sublines);
-void testPrSubline(st_list *subline);
 
+/* st_lists.c */
+void freeSTList(st_list **head);
+/* testing */
+void testPrSTList(st_list *head);
 
 
 

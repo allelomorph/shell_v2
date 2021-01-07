@@ -42,7 +42,7 @@ char *_readline(sh_state *state)
 /* !!! eventually shell var PS1 */
 	{
 		printf("Cascara $ ");
-		/* fflush(stdout); */
+		fflush(stdout);
 	}
 	else if (errno != ENOTTY)
 	{
