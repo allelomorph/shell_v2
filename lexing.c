@@ -136,92 +136,19 @@ char **tokenize(int t_count, char *line, char *delim, bool by_substr)
 }
 
 
-/* trimComments: std: (none) */
-/* trimComments: sub: (none) */
-/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
-void trimComments(char *line, char *whtsp)
-{
-	int i, j;
-
-	if (!line)
-		return;
-
-	if (!whtsp)
-		whtsp = " ";
-
-	for (i = 0; line[i]; i++)
-	{
-		if (line[i] == '#')
-		{
-			/* "#comments" "# comments" */
-			if (i == 0)
-				line[i] = '\0';
-			else
-			{
-				/* " #comments" " # comments" */
-				for (j = 0; whtsp[j]; j++)
-				{
-					if (line[i - 1] == whtsp[j])
-						line[i] = '\0';
-				}
-			}
-		}
-	}
-}
-
-
-/* strtokSubstr: std: fprintf */
-/* strtokSubstr: sub: _strlen _strncmp */
-/* 2 differences with stock strtok:
-1- mulitchar delim arg treated as if entire string is one delim
-2- when delimter found at beginning of string, end of string, or
-two tokens are adjacent in the string, returns "" token instead of skipping.
+/* syntax token struct macros */
+/*
+ST_NONE     0
+ST_CMD_BRK  1
+ST_ONSCCS   2
+ST_ONFAIL   3
+ST_PIPE     4
+ST_RD_OUT   5
+ST_APPEND   6
+ST_RD_IN    7
+ST_HEREDOC  8
+ST_MACRO_CT 9
 */
-char *strtokSubstr(char *str, char *delim)
-{
-	static char *nextToken, *parseStr;
-	size_t i, delimLen, parseStrLen;
-
-	if (!delim || !delim[0])
-	{
-		fprintf(stderr, "strtokSubstr: missing delimiter\n");
-		return (NULL);
-	}
-	/* str != NULL starts parsing of new string */
-	/* testing (str[0] != '\0') prevents returning 1 token for empty str */
-	if (str && str[0])
-	{
-		parseStr = str;
-		nextToken = NULL;
-	}
-	else
-	{
-		if (!nextToken) /* previous save point already at final \0 */
-			return (NULL);
-		else /* still parsing previous string `str` */
-			parseStr = nextToken;
-	}
-	delimLen = _strlen(delim);
-	parseStrLen = _strlen(parseStr);
-	for (i = 0; parseStr[i]; i++)
-	{
-		if (parseStr[i] == delim[0])
-		{
-			if (parseStrLen >= i + delimLen &&
-			    (_strncmp(parseStr + i, delim, delimLen) == 0))
-			{
-			        nextToken = (parseStr + i + delimLen);
-				parseStr[i] = '\0';
-				break;
-			}
-		}
-	}
-	if (nextToken == parseStr) /* no more tokens, final valid return */
-		nextToken = NULL;
-	return (parseStr);
-}
-
-
 st_list *lineLexer(char *line)
 {
 	st_list *head = NULL;
@@ -265,19 +192,40 @@ st_list *lineLexer(char *line)
 	return (head);
 }
 
-/* syntax token struct macros */
-/*
-ST_NONE     0
-ST_CMD_BRK  1
-ST_ONSCCS   2
-ST_ONFAIL   3
-ST_PIPE     4
-ST_RD_OUT   5
-ST_APPEND   6
-ST_RD_IN    7
-ST_HEREDOC  8
-ST_MACRO_CT 9
-*/
+
+/* trimComments: std: (none) */
+/* trimComments: sub: (none) */
+/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
+void trimComments(char *line, char *whtsp)
+{
+	int i, j;
+
+	if (!line)
+		return;
+
+	if (!whtsp)
+		whtsp = " ";
+
+	for (i = 0; line[i]; i++)
+	{
+		if (line[i] == '#')
+		{
+			/* "#comments" "# comments" */
+			if (i == 0)
+				line[i] = '\0';
+			else
+			{
+				/* " #comments" " # comments" */
+				for (j = 0; whtsp[j]; j++)
+				{
+					if (line[i - 1] == whtsp[j])
+						line[i] = '\0';
+				}
+			}
+		}
+	}
+}
+
 
 /* parser will put st_lists into CMD structs and return syntax errors/or advance loop count on success */
 int lexByDelim(st_list *head, char *delim, size_t p_op_code)
@@ -333,44 +281,44 @@ int lexByDelim(st_list *head, char *delim, size_t p_op_code)
 	return (0);
 }
 
-#ifdef ZZZ
-/* 2nd draft attempt at generalizing lexByDelim to work with both strtoks */
-/* parser will put st_lists into CMD structs and return syntax errors/or advance loop count on success */
-void agn_lexByDelim(st_list *head, char *delim, size_t p_op_code, char *(*tokenizer)(char *, char *))
+
+/* largely redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
+/* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
+/* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
+int lexByWhtSpc(st_list *head)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
 	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
 	size_t t_len;
 
-	if (!head || !delim)
-		return;
+	if (!head)
+		return (1);
 
 	curr = head;
 	while (curr)
 	{
-	        token = curr->token;
+		token = curr->token;
 		t_len = _strlen(token);
 
-		first_subt = tokenizer(token, delim);
+		first_subt = strtok(token, WHTSPC);
 
 		/* length is same if no delims found */
-		if (_strlen(first_subt) != t_len)
+		if (first_subt && (_strlen(first_subt) != t_len))
 		{
 			temp = curr;
 			reentry = curr->next;
-			/* generate sublist (curr will eventually */
-			while ((subtoken = tokenizer(NULL, delim)) != NULL)
+			/* generate sublist */
+			while ((subtoken = strtok(NULL, WHTSPC)) != NULL)
 			{
 				new = malloc(sizeof(st_list));
 				if (!new)
 				{
 					fprintf(stderr, "lexByDelim: malloc failure\n");
-					return;
+					return (1);
 				}
 				new->token = subtoken;
-				new->p_op = p_op_code;
+				new->p_op = ST_NONE;
 				new->next = NULL;
-
 				temp->next = new;
 				temp = new;
 			}
@@ -383,216 +331,57 @@ void agn_lexByDelim(st_list *head, char *delim, size_t p_op_code, char *(*tokeni
 		else
 			curr = curr->next;
 	}
-}
-#endif
-
-
-/* redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
-/* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
-/* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
-void lexByWhtSpc(st_list *head)
-{
-	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
-	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
-	size_t t_len;
-
-	if (!head)
-		return;
-/*
-	printf("\t\t\tlexByWhtSpc: at start:\n");
-	testPrSubline(head);
-*/
-/*
-	printf("\t\t\tlexByWhtSpc: at start head @ %p\n", (void *)head);
-*/
-
-	curr = head;
-	while (curr)
-	{
-		token = curr->token;
-		t_len = _strlen(token);
-/*
-		printf("\t\t\tlexByWhtSpc: token:'%s'\n", token);
-*/
-		first_subt = strtok(token, WHTSPC);
-/*
-		printf("\t\t\tlexByWhtSpc: first_subt:'%s'\n", first_subt);
-*/
-		/* length is same if no delims found */
-		if (first_subt && (_strlen(first_subt) != t_len))
-		{
-			temp = curr;
-			reentry = curr->next;
-			/* generate sublist (curr will eventually */
-			while ((subtoken = strtok(NULL, WHTSPC)) != NULL)
-			{
-/*
-				printf("\t\t\tlexByWhtSpc: subtoken:'%s'\n", subtoken);
-				printf("\t\t\tlexByWhtSpc: head @ %p curr @ %p reentry @ %p temp @ %p\n", (void *)head, (void *)curr, (void *)reentry, (void *)temp);
-*/
-				new = malloc(sizeof(st_list));
-				if (!new)
-				{
-					fprintf(stderr, "lexByDelim: malloc failure\n");
-					/* loop freeSTList(sublines) */
-					return;
-				}
-				new->token = subtoken;
-				new->p_op = ST_NONE;
-				new->next = NULL;
-/*
-				printf("\t\t\tlexByWhtSpc: new @ %p\n", (void *)new);
-*/
-				temp->next = new;
-				temp = new;
-			}
-			/* no more subtokens, reached end of sublist, splicing back in */
-			temp->next = reentry;
-			/* not a total replacement, we reuse the original node to store the first subtoken */
-			curr->token = first_subt;
-			curr = reentry;
-		}
-		else
-			curr = curr->next; /* to next token, or NULL */
-	}
-
-/*
-	printf("\t\t\tlexByWhtSpc: at end head @ %p\n", (void *)head);
-*/
-
-}
-
-void freeSTList(st_list **head)
-{
-        st_list *temp1 = NULL, *temp2 = NULL;
-
-	temp1 = *head;
-	while (temp1)
-	{
-		temp2 = temp1->next;
-
-	        /* temp->token is a pointer to a substring, no need to free */
-		free(temp1);
-
-		temp1 = temp2;
-	}
-	*head = NULL;
-}
-
-void testPrSTList(st_list *head)
-{
-	st_list *temp = NULL;
-	char *p_ops[] = {
-		"ST_NONE",
-		"ST_CMD_BRK",
-		"ST_ONSCCS",
-		"ST_ONFAIL",
-		"ST_PIPE",
-		"ST_APPEND",
-		"ST_RD_OUT",
-		"ST_HEREDOC",
-		"ST_RD_IN",
-		"ST_MACRO_CT"
-	};
-
-	printf("   test print of subline @ %p\n", (void *)head);
-	temp = head;
-	while (temp)
-	{
-		printf("\t\ttoken @ %p:'%s' p_op:%s\n", (void *)temp, temp->token, p_ops[temp->p_op]);
-		temp = temp->next;
-	}
+	return (0);
 }
 
 
-/* syntax token struct macros */
-/*
-ST_NONE     0
-ST_CMD_BRK  1
-ST_ONSCCS   2
-ST_ONFAIL   3
-ST_PIPE     4
-ST_APPEND   5
-ST_RD_OUT   6
-ST_HEREDOC  7
-ST_RD_IN    8
-ST_MACRO_CT 9
+/* strtokSubstr: std: fprintf */
+/* strtokSubstr: sub: _strlen _strncmp */
+/* 2 differences with stock strtok:
+1- mulitchar delim arg treated as if entire string is one delim
+2- when delimter found at beginning of string, end of string, or
+two tokens are adjacent in the string, returns "" token instead of skipping.
 */
-
-
-/*
-st list insert(node, delim)
-
-save orig node pointer
-save pointer to node before orig
-
-
-tokenize token string by new delimiter into a new st list
-if strtokSubtr returns anything after first call (there are subtokens)
-then create new sublist node for each return
-else return orig
-
-if new list head != orig node
-prev->next = head of new list
-tail of new list->next = orig->next
-
-free orig
-*/
-
-#ifdef ZZZ
-
-st_list **lineToSublines(char *line)
+char *strtokSubstr(char *str, char *delim)
 {
-	st_list **sublines = NULL;
-	st_list *new = NULL;
-	int i, sl_ct = 1;
+	static char *nextToken, *parseStr;
+	size_t i, delimLen, parseStrLen;
 
-	if (!line || !line[0])
-		return (NULL);
-
-	for (i = 0; line[i]; i++)
-		if (line[i] == ';')
-			sl_ct++;
-
-        sublines = malloc(sizeof(st_list *) * (sl_ct + 1));
-	if (!sublines)
+	if (!delim || !delim[0])
 	{
-		fprintf(stderr, "lineToSublines: malloc failure\n");
+		fprintf(stderr, "strtokSubstr: missing delimiter\n");
 		return (NULL);
 	}
-	sublines[sl_ct] = NULL;
-
-	printf("\t\tlineToSublines: array of size %i + 1 allocated\n", sl_ct);
-
-	for (i = 0; i < sl_ct; i++)
+	/* str != NULL starts parsing of new string */
+	/* testing (str[0] != '\0') prevents returning 1 token for empty str */
+	if (str && str[0])
 	{
-		new = malloc(sizeof(st_list) * 1);
-		if (!new)
-		{
-			fprintf(stderr, "lineToSublines: malloc failure\n");
-			freeSublines(sublines);
+		parseStr = str;
+		nextToken = NULL;
+	}
+	else
+	{
+		if (!nextToken) /* previous save point already at final \0 */
 			return (NULL);
-		}
-
-		if (i == 0)
-			new->token = strtokSubstr(line, ";");
-		else
-			new->token = strtokSubstr(NULL, ";");
-
-		new->p_op = ST_NONE;
-		new->next = NULL;
-		sublines[i] = new;
-
-
-		printf("\t\tlineToSublines: before lexByWhtSpc: sublines[%i] @ %p: '%s'\n", i, (void *)sublines[i], (sublines[i])->token);
-
-		lexByWhtSpc(sublines[i]);
-/*
-  printf("\t\tlineToSublines: after lexByWhtSpc: sublines[%i] @ %p: '%s'\n", i, (void *)sublines[i], (sublines[i])->token);
-*/
+		else /* still parsing previous string `str` */
+			parseStr = nextToken;
 	}
-
-	return (sublines);
+	delimLen = _strlen(delim);
+	parseStrLen = _strlen(parseStr);
+	for (i = 0; parseStr[i]; i++)
+	{
+		if (parseStr[i] == delim[0])
+		{
+			if (parseStrLen >= i + delimLen &&
+			    (_strncmp(parseStr + i, delim, delimLen) == 0))
+			{
+			        nextToken = (parseStr + i + delimLen);
+				parseStr[i] = '\0';
+				break;
+			}
+		}
+	}
+	if (nextToken == parseStr) /* no more tokens, final valid return */
+		nextToken = NULL;
+	return (parseStr);
 }
-
-#endif

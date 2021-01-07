@@ -100,20 +100,21 @@ void removeKVPair(kv_list **head, char *key);
 
 
 /* lexing.c */
-void trimComments(char *line, char *whtsp);
+/* countTokens and tokenize now vestigial unless for testing */
 int countTokens(char *input, char *delim, bool by_substr);
 char **tokenize(int t_count, char *line, char *delim, bool by_substr);
-char *strtokSubstr(char *str, char *delim);
 
 st_list *lineLexer(char *line);
+void trimComments(char *line, char *whtsp);
 int lexByDelim(st_list *head, char *delim, size_t p_op_code);
-void lexByWhtSpc(st_list *head);
-void freeSublines(st_list **sublines);
+int lexByWhtSpc(st_list *head);
+char *strtokSubstr(char *str, char *delim);
+
+
+/* st_lists.c */
 void freeSTList(st_list **head);
-st_list **lineToSublines(char *line);
 /* testing */
 void testPrSTList(st_list *head);
-
 
 
 

@@ -4,7 +4,7 @@
 CC = gcc
 SRC = hsh.c \
 	builtins.c errors.c lexing.c kv_lists.c \
-	scripts.c shellLoop-subr.c \
+	scripts.c shellLoop-subr.c st_lists.c \
 	string-utils1.c string-utils2.c _which.c
 OBJ = $(SRC:.c=.o)
 NAME = hsh
