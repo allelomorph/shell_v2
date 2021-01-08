@@ -199,7 +199,7 @@ bool checkBuiltins(char **tokens, int token_count,
 }
 
 
-
+/* for now also omitting the special ";;" error sh gives for two consecutive semicolons, could be done before lexing with a simple scan of the unprocessed line */
 /* bash and sh wait for secondary input when &&/||/| are followed by newline */
 int validateSyntax(st_list *head, sh_state *state)
 {
@@ -212,40 +212,33 @@ int validateSyntax(st_list *head, sh_state *state)
 		fprintf(stderr, "validateSyntax: missing arguments\n");
 		return (1);
 	}
+
 	temp = head;
 	while (temp && !bad_op)
 	{
-		if ((temp->token)[0] == '\0' &&
-		    temp->next && temp->next->p_op == ST_CMD_BRK)
-		{
-			if (temp->next->next &&
-			    (temp->next->next->token)[0] == '\0' &&
-			    temp->next->next->p_op == ST_CMD_BRK)
-				bad_op = "\";;\"";
-			else
-				bad_op = err_ops[ST_CMD_BRK];
-		}
-		if ((temp->token)[0] == '\0' &&
-		    (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE))
-		{
-			if (!(temp->next))
-				bad_op = "newline";
-			else if (temp->next->p_op >= ST_CMD_BRK &&
-				 temp->next->p_op <= ST_PIPE)
-				bad_op = err_ops[temp->next->p_op];
-		}
-		if ((temp->token)[0] == '\0' &&
-		    (temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN) &&
-		    temp->next &&
-		    (temp->next->p_op >= ST_APPEND && temp->next->p_op <= ST_RD_IN))
+	        if ((temp->token)[0] == '\0' && temp->next &&
+			 (temp->next->p_op >= ST_CMD_BRK &&
+			  temp->next->p_op <= ST_PIPE))
+			bad_op = err_ops[temp->next->p_op];
+		else if ((temp->token)[0] == '\0' &&
+			 (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE) &&
+			 !(temp->next))
+			bad_op = "newline";
+		else if ((temp->token)[0] == '\0' &&
+			 (temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN) &&
+			 temp->next &&
+			 (temp->next->p_op >= ST_APPEND &&
+			  temp->next->p_op <= ST_RD_IN))
 			bad_op = "redirection";
 		temp = temp->next;
 	}
+
 	if (bad_op)
 	{
 		syntaxErr(bad_op, state);
 		return (1);
 	}
+
 	return (0);
 }
 

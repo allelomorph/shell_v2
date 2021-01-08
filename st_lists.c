@@ -44,7 +44,7 @@ void testPrSTList(st_list *head)
 	temp = head;
 	while (temp)
 	{
-		printf("\t\ttoken @ %p:'%s' p_op:%s\n", (void *)temp, temp->token, p_ops[temp->p_op]);
+		printf("\t\tst_list node @ %p token @ %p:'%s' p_op:%s\n", (void *)temp, (void *)(temp->token), temp->token, p_ops[temp->p_op]);
 		temp = temp->next;
 	}
 }

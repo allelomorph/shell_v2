@@ -147,6 +147,7 @@ st_list *lineLexer(char *line, sh_state *state)
 		return (NULL);
 
 	trimComments(line, WHTSPC);
+
 	/* start token list with one node containing line */
 	head = malloc(sizeof(st_list));
 	if (!head)
