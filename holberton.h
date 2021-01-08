@@ -1,16 +1,32 @@
 #ifndef HOLBERTON_H
 #define HOLBERTON_H
 
+/* use typedef enum? */
+/* syntax token struct macros */
+#define ST_NONE     0
+#define ST_CMD_BRK  1
+#define ST_ONSCCS   2
+#define ST_ONFAIL   3
+#define ST_PIPE     4
+#define ST_APPEND   5
+#define ST_RD_OUT   6
+#define ST_HEREDOC  7
+#define ST_RD_IN    8
+#define ST_MACRO_CT 9
+
+#define WHTSPC " \t\v" /* full set " \t\n\v\f\r" */
+
 #include <errno.h>
 #include <stdbool.h>
 
-/* for testing */
+/* !!! only here for testing */
 #include <stdio.h>
 
 /* C standard library global variables */
-/* extern int errno;  deprecated for include errno.h */
-/* extern char **environ; not using since we need a manipulable copy */
+/* extern int errno;  deprecated for `#include <errno.h>` */
+/* extern char **environ; not used since we need a manipulable copy */
 
+/* used for envrionment, shell variables and aliases */
 typedef struct kv_list_s
 {
 	char *key;
@@ -18,10 +34,19 @@ typedef struct kv_list_s
 	struct kv_list_s *next;
 } kv_list;
 
+/* syntax token list */
+/* used for lexing */
+typedef struct st_list_s
+{
+	char *token;
+        size_t p_op; /* "preceding operator" - records syntax operator found to left of token */
+	struct st_list_s *next;
+} st_list;
+
 /* !!! needed to emulate sh error return when running scripts (syntax errors in a script would produce "<sname>: 1: <sname>: Syntax error: <delim> unexpected"*/
 /* alternately, exec and script name, stdinfd_bup could all be stored as shell vars */
 /**
- * everything you need to close the program from any subroutine
+ * information needed globally by most subroutines
  */
 typedef struct sh_state_s
 {
@@ -60,7 +85,8 @@ int _cd(char *dir_name, sh_state *state);
 
 
 /* errors.c */
-void commandNotFound(char *cmd, sh_state *state);
+void cmdNotFoundErr(char *cmd, sh_state *state);
+void syntaxErr(char *bad_op, sh_state *state);
 
 
 /* kv_lists.c */
@@ -75,10 +101,25 @@ void removeKVPair(kv_list **head, char *key);
 
 
 /* lexing.c */
-void trimComments(char *line, char *whtsp);
+/* countTokens and tokenize now vestigial unless for testing */
 int countTokens(char *input, char *delim, bool by_substr);
 char **tokenize(int t_count, char *line, char *delim, bool by_substr);
+
+st_list *lineLexer(char *line, sh_state *state);
+
+char *_itoa(int n);
+
+void trimComments(char *line, char *whtsp);
+int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code);
+int lexByWhtSpc(st_list *begin, st_list *end);
 char *strtokSubstr(char *str, char *delim);
+
+
+/* st_lists.c */
+void freeSTList(st_list **head);
+/* testing */
+void testPrSTList(st_list *head);
+
 
 
 /* scripts.c */
@@ -93,6 +134,8 @@ char *_readline(sh_state *state);
 void runCommand(char **args, char *line, sh_state *state);
 bool checkBuiltins(char **tokens, int token_count,
 		   char *line, sh_state *state);
+
+int validateSyntax(st_list *head, sh_state *state);
 
 
 /* string-utils1.c */

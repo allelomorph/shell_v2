@@ -136,6 +136,172 @@ char **tokenize(int t_count, char *line, char *delim, bool by_substr)
 }
 
 
+
+st_list *lineLexer(char *line, sh_state *state)
+{
+	st_list *head = NULL;
+
+	(void)state;
+
+	if (!line || !line[0])
+		return (NULL);
+
+	trimComments(line, WHTSPC);
+
+	/* start token list with one node containing line */
+	head = malloc(sizeof(st_list));
+	if (!head)
+	{
+		fprintf(stderr, "lineLexer: malloc failure\n");
+		return (NULL);
+	}
+	head->token = line;
+	head->p_op = ST_NONE;
+	head->next = NULL;
+
+/* !!! can we make this a loop that calls enumerated array of args? */
+	/* subdivide token list to record ; occurances */
+	lexByDelim(head, NULL, ";", ST_CMD_BRK);
+	/* subdivide token list to record && occurances */
+	lexByDelim(head, NULL, "&&", ST_ONSCCS);
+	/* subdivide token list to record || occurances */
+	lexByDelim(head, NULL, "||", ST_ONFAIL);
+	/* subdivide token list to record | occurances */
+	lexByDelim(head, NULL, "|", ST_PIPE);
+	/* subdivide token list to record >> occurances */
+	lexByDelim(head, NULL, ">>", ST_APPEND);
+	/* subdivide token list to record > occurances */
+	lexByDelim(head, NULL, ">", ST_RD_OUT);
+	/* subdivide token list to record << occurances */
+	lexByDelim(head, NULL, "<<", ST_HEREDOC);
+	/* subdivide token list to record < occurances */
+	lexByDelim(head, NULL, "<", ST_RD_IN);
+	/* trim whitespace last, potentially NULL token->token */
+	lexByWhtSpc(head, NULL);
+
+	/* expand and fully lex aliases */
+	/* expand variables - only lexed by whitespace */
+/*
+	varExpansion(head, state);
+*/
+	return (head);
+}
+
+#ifdef ZZZ
+/* !!! unfinished draft*/
+
+int varExpansion(st_list *head, sh_state *state);
+int varExpansion(st_list *head, sh_state *state)
+{
+	st_list *temp = NULL;
+	kv_list *var = NULL;
+	char *key = NULL, *value = NULL;
+	char **var_copies = NULL;
+	int vc_count = 0;
+
+	if (!head || !state)
+		return (1);
+
+	/* since tokenizing mangles the original strings, we need to copy each var value that we use */
+	temp = head;
+	while (temp)
+	{
+		if (temp->token && (temp->token)[0] == '$')
+			vc_count++;
+		temp = temp->next;
+o	}
+	var_copies = malloc(sizeof(char *) * (vc_count + 1));
+	if (!var_copies)
+	{
+		fprintf(stderr, "varExpansion: malloc failure\n");
+		return (1);
+	}
+/* !!! keep var_copies in state? */
+
+        for (i = 0; temp; temp = temp->next)
+	{
+		if (temp->token && (temp->token)[0] == '$')
+		{
+			key = (temp->token) + 1;
+		        if ((var = getKVPair(state->env_vars, key)) != NULL)
+				value = _strdup(var->value);
+			else if (_strcmp(temp->token, "$?") == 0)
+				value = _itoa(state->exit_code);
+			else if (_strcmp(temp->token, "$$") == 0)
+				value = _itoa(getpid());
+			else
+				value = _strdup("");
+
+			/* !value protection? */
+			/* set copy in storage to later tokenize by whitespace */
+			var_copies[i] = value;
+			/* token replaced by var value */
+			temp->token = var_copies[i];
+			lexByWhtSpc(temp, temp->next);
+		        i++;
+/* !!! don't forget to free(state->var_copies after execution at end of shellLoop */
+		}
+	}
+
+}
+#endif
+
+/* original itoa adatped from printf di_print */
+/* #include <stdlib.h> */
+/*
+ * refactor adapted from u_print, but casting int to unsigned absolute value to
+ * manage over/underflow
+ */
+/**
+ * di_print - prints signed int as string when called by format tag in printf
+ * @args: variable argument coming from _printf
+ * Return: output length in bytes/chars
+ */
+char *_itoa(int n)
+{
+        char *n_str = NULL;
+        unsigned int pow_10 = 1, temp;
+        int i, len = 1;
+	bool neg = false;
+
+	if (n < 0)
+	{
+                neg = true;
+		len++; /* for '-' */
+                temp = (unsigned int)-n;
+        }
+        else
+                temp = (unsigned int)n;
+
+        while (pow_10 <= (temp / 10))
+	{
+                pow_10 *= 10;
+		len++;
+	}
+
+        n_str = malloc(sizeof(char) * (len + 1));
+        if (!n_str)
+	{
+		fprintf(stderr, "_itoa: malloc failure\n");
+                return (NULL);
+	}
+
+	if (neg)
+		n_str[0] = '-';
+
+        for (i = neg ? 1 : 0; i < len; i++)
+        {
+                n_str[i] = ((temp / pow_10) + '0');
+                temp %= pow_10;
+                pow_10 /= 10;
+        }
+        n_str[len] = '\0';
+
+        return (n_str);
+}
+
+
+
 /* trimComments: std: (none) */
 /* trimComments: sub: (none) */
 /* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
@@ -170,6 +336,118 @@ void trimComments(char *line, char *whtsp)
 }
 
 
+/* parser will put st_lists into CMD structs and return syntax errors/or advance loop count on success */
+int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
+{
+	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
+	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
+	size_t t_len;
+
+	if (!begin || !delim)
+		return (1);
+
+	curr = begin;
+	while (curr && curr != end)
+	{
+	        token = curr->token;
+/*
+		printf("\t\tlexByDelim: token @ %p:'%s'\n", (void *)token, token);
+*/
+		t_len = _strlen(token);
+		first_subt = strtokSubstr(token, delim);
+/*
+		printf("\t\tlexByDelim: first_subt @ %p:'%s'\n", (void *)first_subt, first_subt);
+*/
+		/* length is same if no delims found */
+		if (first_subt != NULL && _strlen(first_subt) != t_len)
+		{
+			temp = curr;
+			reentry = curr->next;
+			while ((subtoken = strtokSubstr(NULL, delim)) != NULL)
+			{ /* generate sublist */
+				new = malloc(sizeof(st_list));
+				if (!new)
+				{
+					fprintf(stderr, "lexByDelim: malloc failure\n");
+					return (1);
+				}
+				new->token = subtoken;
+				new->p_op = p_op_code;
+				new->next = NULL;
+				temp->next = new;
+				temp = new;
+			}
+			temp->next = reentry; /* sublist ends, splice back in */
+			curr->token = first_subt; /* reuse orig start node */
+			curr = reentry; /* continue search after splice */
+		}
+		else
+			curr = curr->next;
+	}
+/*
+	printf("lexByDelim: success\n");
+*/
+	return (0);
+}
+
+
+/* largely redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
+/* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
+/* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
+int lexByWhtSpc(st_list *begin, st_list *end)
+{
+	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
+	char *token = NULL, *first_subt = NULL, *subtoken = NULL;
+	size_t t_len;
+
+	if (!begin)
+		return (1);
+
+	curr = begin;
+	while (curr && curr != end)
+	{
+		token = curr->token;
+		t_len = _strlen(token);
+
+		first_subt = strtok(token, WHTSPC);
+		if (first_subt == NULL) /* token is only whitespace */
+		{
+			curr->token = token + t_len; /* set token as "" */
+			curr = curr->next;
+		}
+		/* length is same if no delims found */
+		else if ((_strlen(first_subt) != t_len))
+		{
+			temp = curr;
+			reentry = curr->next;
+			/* generate sublist */
+			while ((subtoken = strtok(NULL, WHTSPC)) != NULL)
+			{
+				new = malloc(sizeof(st_list));
+				if (!new)
+				{
+					fprintf(stderr, "lexByDelim: malloc failure\n");
+					return (1);
+				}
+				new->token = subtoken;
+				new->p_op = ST_NONE;
+				new->next = NULL;
+				temp->next = new;
+				temp = new;
+			}
+			/* no more subtokens, reached end of sublist, splicing back in */
+			temp->next = reentry;
+			/* not a total replacement, we reuse the original node to store the first subtoken */
+			curr->token = first_subt;
+			curr = reentry;
+		}
+		else
+			curr = curr->next;
+	}
+	return (0);
+}
+
+
 /* strtokSubstr: std: fprintf */
 /* strtokSubstr: sub: _strlen _strncmp */
 /* 2 differences with stock strtok:
@@ -187,7 +465,9 @@ char *strtokSubstr(char *str, char *delim)
 		fprintf(stderr, "strtokSubstr: missing delimiter\n");
 		return (NULL);
 	}
-	if (str) /* str != NULL starts parsing of new string */
+	/* str != NULL starts parsing of new string */
+	/* testing (str[0] != '\0') prevents returning 1 token for empty str */
+	if (str && str[0])
 	{
 		parseStr = str;
 		nextToken = NULL;
@@ -199,7 +479,6 @@ char *strtokSubstr(char *str, char *delim)
 		else /* still parsing previous string `str` */
 			parseStr = nextToken;
 	}
-
 	delimLen = _strlen(delim);
 	parseStrLen = _strlen(parseStr);
 	for (i = 0; parseStr[i]; i++)
@@ -215,7 +494,6 @@ char *strtokSubstr(char *str, char *delim)
 			}
 		}
 	}
-
 	if (nextToken == parseStr) /* no more tokens, final valid return */
 		nextToken = NULL;
 	return (parseStr);

@@ -19,7 +19,7 @@
 /* _readline: std: isatty printf perror getline free */
 /* _readline: sub: (none) */
 /* runCommand: std: fprintf fork perror execve free wait */
-/* runCommand: sub: _which commandNotFound StrArrFromKVList strArrFree freeShellState */
+/* runCommand: sub: _which cmdNotFoundErr StrArrFromKVList strArrFree freeShellState */
 /* checkBuiltins: std: fprintf */
 /* checkBuiltins: sub: _env __exit _setenv _unsetenv _cd */
 
@@ -42,7 +42,7 @@ char *_readline(sh_state *state)
 /* !!! eventually shell var PS1 */
 	{
 		printf("Cascara $ ");
-		/* fflush(stdout); */
+		fflush(stdout);
 	}
 	else if (errno != ENOTTY)
 	{
@@ -73,7 +73,7 @@ char *_readline(sh_state *state)
 
 
 /* runCommand: std: fprintf fork perror execve free wait */
-/* runCommand: sub: _which commandNotFound StrArrFromKVList strArrFree freeShellState */
+/* runCommand: sub: _which cmdNotFoundErr StrArrFromKVList strArrFree freeShellState */
 /**
  * runCommand - forks into child process to execute command in user input
  * with given args and environment
@@ -95,7 +95,7 @@ void runCommand(char **args, char *line, sh_state *state)
 /* path check with _which could happen in shellLoop to free up space here */
 	if ((cmd_path = _which(args[0], state)) == NULL)
 	{
-		commandNotFound(args[0], state);
+		cmdNotFoundErr(args[0], state);
 		return;
 	}
 /*
@@ -197,3 +197,152 @@ bool checkBuiltins(char **tokens, int token_count,
 	state->exit_code = exit_code;
 	return (builtin);
 }
+
+
+/* for now also omitting the special ";;" error sh gives for two consecutive semicolons, could be done before lexing with a simple scan of the unprocessed line */
+/* bash and sh wait for secondary input when &&/||/| are followed by newline */
+int validateSyntax(st_list *head, sh_state *state)
+{
+	st_list *temp = NULL;
+	char *err_ops[] = {"", "\";\"", "\"&&\"", "\"||\"", "\"|\""};
+	char *bad_op = NULL;
+
+	if (!head || !state)
+	{
+		fprintf(stderr, "validateSyntax: missing arguments\n");
+		return (1);
+	}
+
+	temp = head;
+	while (temp && !bad_op)
+	{
+	        if ((temp->token)[0] == '\0' && temp->next &&
+			 (temp->next->p_op >= ST_CMD_BRK &&
+			  temp->next->p_op <= ST_PIPE))
+			bad_op = err_ops[temp->next->p_op];
+		else if ((temp->token)[0] == '\0' &&
+			 (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE) &&
+			 !(temp->next))
+			bad_op = "newline";
+		else if ((temp->token)[0] == '\0' &&
+			 (temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN) &&
+			 temp->next &&
+			 (temp->next->p_op >= ST_APPEND &&
+			  temp->next->p_op <= ST_RD_IN))
+			bad_op = "redirection";
+		temp = temp->next;
+	}
+
+	if (bad_op)
+	{
+		syntaxErr(bad_op, state);
+		return (1);
+	}
+
+	return (0);
+}
+
+/*
+		if ((temp->token)[0] == '\0' &&
+		    (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE))
+		{
+			if (!(temp->next))
+				bad_op = "newline";
+			else if (temp->next->p_op == ST_CMD_BRK)
+				bad_op = "\";\"";
+			else if (temp->next->p_op == ST_ONSCCS)
+				bad_op = "\"&&\"";
+			else if (temp->next->p_op == ST_ONFAIL)
+				bad_op = "\"||\"";
+			else if (temp->next->p_op == ST_PIPE)
+				bad_op = "\"|\"";
+		}
+*/
+
+		/* empty tokens appear if:
+		     1- only whitespace in line == one token of ""
+		     2- no chars or only whitespace before delim == token of "" before token with p_op
+		     3- no chars or only whitespace after delim == token of "" with p_op
+		   no chars in line skips processing !
+		*/
+
+/*
+error cases:
+
+;empty(EOL) (ignored)
+^ or empty;  ";" unexpected
+;nochars; ";;" unexpected
+
+^ or empty&& "&&" unexpected
+&&empty  hsh: newline unexpected
+         sh: enters secondary input/lexing loop until no terminating &&/||/|
+&&empty; ";" unexpected
+&&empty&& "&&" unexpected
+&&empty|| "||" unexpected
+&&empty| "|" unexpected
+
+
+^ or empty|| "||" unexpected
+||empty  hsh: newline unexpected
+         sh: enters secondary input/lexing loop until no terminating &&/||/|
+||empty; ";" unexpected
+||empty&& "&&" unexpected
+||empty|| "||" unexpected
+||empty| "|" unexpected
+
+
+^ or empty| "|" unexpected
+|empty  hsh: newline unexpected
+         sh: enters secondary input/lexing loop until no terminating &&/||/|
+|empty; ";" unexpected
+|empty&& "&&" unexpected
+|empty|| "||" unexpected
+|empty| "|" unexpected
+
+
+!!! sh: redirection unexpected does not advance loop count, but newline unepxected does when for redirects/does not when for ;
+!!! so, check for adjacent redirects here, empty ones during aprsing into CMDs
+
+at lexing stage:
+>>/>/<</<empty>>/>/<</< redirection unexpected
+
+in parser when assigining fds:
+>>/>/<</<empty newline unexpected
+		  (token[0] == '\0' && token->p_op == (int)">>/>/<</<" && !(temp->next)) newline unexpected
+*/
+
+		/*
+		  (token[0] == '\0' && temp->next && temp->next->p_op == ST_CMD_BRK) ";" unexpected
+		  && (temp->next->next && temp->next->next->p_op == ST_CMD_BRK) ";;" unexpected
+		 */
+		/*
+		  ^ or empty&& "&&" unexpected
+		  (token[0] == '\0' && temp->next && temp->next->p_op == ST_ONSCCS) "&&" unexpected
+		  &&empty  hsh: newline unexpected
+		  (token[0] == '\0' && token->p_op == ST_ONSCCS && !(temp->next)) newline unexpected
+		  &&empty;/&&/||/| ";/&&/||/|" unexpected
+		  (token[0] == '\0' && token->p_op == ST_ONSCCS && && temp->next->p_op == (int)";/&&/||/|" ) ";/&&/||/|" unexpected
+		*/
+		/*
+		  ^ or empty|| "||" unexpected
+		  (token[0] == '\0' && temp->next && temp->next->p_op == ST_ONFAIL) "||" unexpected
+		  ||empty  hsh: newline unexpected
+		  (token[0] == '\0' && token->p_op == ST_ONFAIL && !(temp->next)) newline unexpected
+		  ||empty;/&&/||/| ";/&&/||/|" unexpected
+		  (token[0] == '\0' && token->p_op == ST_ONFAIL && && temp->next->p_op == (int)";/&&/||/|" ) ";/&&/||/|" unexpected
+		*/
+
+		/*
+		  ^ or empty| "|" unexpected
+		  (token[0] == '\0' && token->next && token->next->p_op == ST_PIPE) "|" unexpected
+		  |empty  hsh: newline unexpected
+		  (token[0] == '\0' && token->p_op == ST_PIPE && !(temp->next)) newline unexpected
+		  |empty;/&&/||/| ";/&&/||/|" unexpected
+		  (token[0] == '\0' && token->p_op == ST_PIPE && temp->next->p_op == (int)";/&&/||/|" ) ";/&&/||/|" unexpected
+		 */
+		/*
+		  at lexing stage:
+		  >>/>/<</<empty>>/>/<</< redirection unexpected
+		  (token[0] == '\0' && token->p_op == (int)">>/>/<</<" &&
+		  temp->next && temp->next->p_op == (int)">>/>/<</<" ) redirection unexpected
+		*/

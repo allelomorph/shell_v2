@@ -35,7 +35,8 @@ char *_strndup(char *str, unsigned int n)
 	unsigned int i, str_len, dup_len;
 	char *dup = NULL;
 
-	if (!str)
+/* !!! changed from (!str) when building varExpansion */
+	if (str == NULL)
 		return (NULL);
 
 	str_len = _strlen(str);
@@ -69,7 +70,8 @@ char *_strdup(char *str)
 	int i, len;
 	char *dup = NULL;
 
-	if (!str)
+/* !!! changed from (!str) when building varExpansion */
+	if (str == NULL)
 		return (NULL);
 
         len = _strlen(str);
@@ -176,6 +178,9 @@ int _strncmp(char *s1, char *s2, unsigned int n)
 unsigned int _strlen(char *s)
 {
 	unsigned int len;
+
+	if (!s)
+		return (0);
 
 	for (len = 0; *s; s++)
 		len++;
