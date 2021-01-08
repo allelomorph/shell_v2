@@ -9,131 +9,10 @@
 /* strtok */
 #include <string.h>
 
-/* countTokens: std: fprintf free (*strtok) strtok */
-/* countTokens: sub: _strdup (*strtokSubStr) */
-/* tokenize: std: (*strtok) strtok malloc fprintf */
-/* tokenize: sub: (*strtokSubStr) strArrFree */
 /* trimComments: std: (none) */
 /* trimComments: sub: (none) */
 /* strtokSubstr: std: fprintf */
 /* strtokSubstr: sub: _strlen _strncmp */
-
-
-/* countTokens: std: fprintf free (*strtok) strtok */
-/* countTokens: sub: _strdup (*strtokSubStr) */
-/**
- * countTokens - parses a string to count sub-strings separated by
- * a given delimiter
- * @input: string to parse
- * @delim: delimiter char or string
- * Return: int counting the number of delimited sub-strings, or -1 on failure
- */
-int countTokens(char *input, char *delim, bool by_substr)
-{
-	char *temp = NULL, *token = NULL;
-	int t_count = 0;
-
-	(void)by_substr;
-	if (!input || !delim)
-		return (-1);
-
-	temp = _strdup(input);
-	if (!temp)
-	{
-		fprintf(stderr, "countTokens: _strdup failed\n");
-		return (-1);
-	}
-
-	token = strtok(temp, delim);
-/*
-	printf("\t\tcountTokens : token 0:%s\n", token);
-*/
-	if (!token)
-	{
-		/* strtok returns NULL first time on "" string */
-		/* strtokSubstr returns "" first time on "" string */
-		free(temp);
-		return (t_count);
-	}
-
-	for (t_count = 0; token; t_count++)
-	{
-		token = strtok(NULL, delim);
-/*
-		printf("\t\tcountTokens : token %i:%s\n", t_count, token);
-*/
-	}
-
-	free(temp);
-/*
-	printf("\t\tcountTokens : returning %i\n", t_count);
-*/
-	return (t_count);
-}
-
-
-/* tokenize: std: (*strtok) strtok malloc fprintf */
-/* tokenize: sub: (*strtokSubStr) strArrFree */
-/* !!! tried fp as arg for strtok and strtokSubStr char *(*tokenizer)(char *, char *) but it caused compiler issues, now using flag */
-/* !!! thought flag was to add "." when tokenizing PATH, */
-/* but here it is described as a "placeholder". why the array offset? */
-/**
- * tokenize - parses a string to return pointers to sub-strings separated by
- * a given delimiter
- * @input: string to parse
- * @ac: amount of expected sub-strings
- * @delim: delimiter char or string
- * @flag: 0 = normal operation, 1 = av[0] intentional placeholder string
- * Return: pointer to an array containing char pointers to positions
- * in input string.
- */
-char **tokenize(int t_count, char *line, char *delim, bool by_substr)
-{
-	char **tokens = NULL;
-	int i;
-
-	(void)by_substr;
-/* !!! flag added one more pointer to allocated array */
-	tokens = malloc(sizeof(char *) * (t_count + 1));
-	if (!tokens)
-	{
-		fprintf(stderr, "tokenize: malloc failed\n");
-		return (NULL);
-	}
-
-	for (i = 0; i < t_count; i++)
-	{
-/* !!! flag added "." as first string in returned array */
-/* it's described as a "placeholder" - is it not refernecing the PWD? */
-		if (i == 0)
-		{
-			tokens[i] = strtok(line, delim);
-			if (!tokens[i])
-			{
-/*
-				printf("\t\ttokenize%i: freeing tokens @:%p\n", i, (void *)tokens);
-*/
-				free(tokens);
-				return (NULL);
-			}
-		}
-		else
-		{
-			tokens[i] = strtok(NULL, delim);
-			if (!tokens[i])
-			{
-/*
-				printf("\t\ttokenize%i: freeing tokens @:%p\n", i, (void *)tokens);
-*/
-				free(tokens);
-				return (NULL);
-			}
-		}
-	}
-
-	tokens[t_count] = NULL;
-	return (tokens);
-}
 
 
 
@@ -209,14 +88,15 @@ int varExpansion(st_list *head, sh_state *state)
 		if (temp->token && (temp->token)[0] == '$')
 			vc_count++;
 		temp = temp->next;
-o	}
+	}
 	var_copies = malloc(sizeof(char *) * (vc_count + 1));
 	if (!var_copies)
 	{
 		fprintf(stderr, "varExpansion: malloc failure\n");
 		return (1);
 	}
-/* !!! keep var_copies in state? */
+	/* store var/alias copies in state members */
+/* !!! needs to be done separately for sh_vars and env_vars, or all together? */
 
         for (i = 0; temp; temp = temp->next)
 	{
@@ -245,60 +125,6 @@ o	}
 
 }
 #endif
-
-/* original itoa adatped from printf di_print */
-/* #include <stdlib.h> */
-/*
- * refactor adapted from u_print, but casting int to unsigned absolute value to
- * manage over/underflow
- */
-/**
- * di_print - prints signed int as string when called by format tag in printf
- * @args: variable argument coming from _printf
- * Return: output length in bytes/chars
- */
-char *_itoa(int n)
-{
-        char *n_str = NULL;
-        unsigned int pow_10 = 1, temp;
-        int i, len = 1;
-	bool neg = false;
-
-	if (n < 0)
-	{
-                neg = true;
-		len++; /* for '-' */
-                temp = (unsigned int)-n;
-        }
-        else
-                temp = (unsigned int)n;
-
-        while (pow_10 <= (temp / 10))
-	{
-                pow_10 *= 10;
-		len++;
-	}
-
-        n_str = malloc(sizeof(char) * (len + 1));
-        if (!n_str)
-	{
-		fprintf(stderr, "_itoa: malloc failure\n");
-                return (NULL);
-	}
-
-	if (neg)
-		n_str[0] = '-';
-
-        for (i = neg ? 1 : 0; i < len; i++)
-        {
-                n_str[i] = ((temp / pow_10) + '0');
-                temp %= pow_10;
-                pow_10 /= 10;
-        }
-        n_str[len] = '\0';
-
-        return (n_str);
-}
 
 
 
@@ -336,7 +162,6 @@ void trimComments(char *line, char *whtsp)
 }
 
 
-/* parser will put st_lists into CMD structs and return syntax errors/or advance loop count on success */
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
@@ -350,14 +175,9 @@ int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 	while (curr && curr != end)
 	{
 	        token = curr->token;
-/*
-		printf("\t\tlexByDelim: token @ %p:'%s'\n", (void *)token, token);
-*/
 		t_len = _strlen(token);
 		first_subt = strtokSubstr(token, delim);
-/*
-		printf("\t\tlexByDelim: first_subt @ %p:'%s'\n", (void *)first_subt, first_subt);
-*/
+
 		/* length is same if no delims found */
 		if (first_subt != NULL && _strlen(first_subt) != t_len)
 		{
@@ -384,13 +204,11 @@ int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 		else
 			curr = curr->next;
 	}
-/*
-	printf("lexByDelim: success\n");
-*/
 	return (0);
 }
 
 
+/* break out newSyntaxToken to get this under 40 lines */
 /* largely redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
 /* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
 /* but testing here compiler throws a __restrict__ type error when passing function pointers as args */

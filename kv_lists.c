@@ -117,7 +117,7 @@ kv_list *KVListFromStrArr(char **str_arr)
 /* addKVListNode: sub: _strdup _strndup */
 /* !!! may separate into KVPairFromStr and addToTail - currently overlaps with */
 /* addKVPair, and addToTail could be used with other SLL types */
-/* KVPairFromEqStr { newKVPair, addNodeToTail }*/
+/* KVPairFromDlmStr  / newKVPair, addToSLLTail }*/
 kv_list *addKVListNode(kv_list **head, char *kv_str)
 {
 	kv_list *new, *temp;
@@ -164,7 +164,7 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 /* addKVPair: std: malloc fprintf free */
 /* addKVPair: sub: _strdup */
 /* adds to head of list */
-/* newKVPair addNodeToHead  */
+/* newKVPair addToSLLHead  */
 kv_list *addKVPair(kv_list **head, char *key, char *value)
 {
         kv_list *new = NULL;

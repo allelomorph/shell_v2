@@ -65,7 +65,7 @@ char *_readline(sh_state *state)
 		if (tty) /* no errors, ctrl+d state */
 		        printf("\n"); /* final \n to exit prompt */
 
-		return (NULL); /* signal end of loop to shellLoop */
+		return (NULL); /* signald end of loop to shellLoop */
 	}
 	input[read_bytes - 1] = '\0'; /* remove newline char from input */
 	return (input);
@@ -242,107 +242,3 @@ int validateSyntax(st_list *head, sh_state *state)
 	return (0);
 }
 
-/*
-		if ((temp->token)[0] == '\0' &&
-		    (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE))
-		{
-			if (!(temp->next))
-				bad_op = "newline";
-			else if (temp->next->p_op == ST_CMD_BRK)
-				bad_op = "\";\"";
-			else if (temp->next->p_op == ST_ONSCCS)
-				bad_op = "\"&&\"";
-			else if (temp->next->p_op == ST_ONFAIL)
-				bad_op = "\"||\"";
-			else if (temp->next->p_op == ST_PIPE)
-				bad_op = "\"|\"";
-		}
-*/
-
-		/* empty tokens appear if:
-		     1- only whitespace in line == one token of ""
-		     2- no chars or only whitespace before delim == token of "" before token with p_op
-		     3- no chars or only whitespace after delim == token of "" with p_op
-		   no chars in line skips processing !
-		*/
-
-/*
-error cases:
-
-;empty(EOL) (ignored)
-^ or empty;  ";" unexpected
-;nochars; ";;" unexpected
-
-^ or empty&& "&&" unexpected
-&&empty  hsh: newline unexpected
-         sh: enters secondary input/lexing loop until no terminating &&/||/|
-&&empty; ";" unexpected
-&&empty&& "&&" unexpected
-&&empty|| "||" unexpected
-&&empty| "|" unexpected
-
-
-^ or empty|| "||" unexpected
-||empty  hsh: newline unexpected
-         sh: enters secondary input/lexing loop until no terminating &&/||/|
-||empty; ";" unexpected
-||empty&& "&&" unexpected
-||empty|| "||" unexpected
-||empty| "|" unexpected
-
-
-^ or empty| "|" unexpected
-|empty  hsh: newline unexpected
-         sh: enters secondary input/lexing loop until no terminating &&/||/|
-|empty; ";" unexpected
-|empty&& "&&" unexpected
-|empty|| "||" unexpected
-|empty| "|" unexpected
-
-
-!!! sh: redirection unexpected does not advance loop count, but newline unepxected does when for redirects/does not when for ;
-!!! so, check for adjacent redirects here, empty ones during aprsing into CMDs
-
-at lexing stage:
->>/>/<</<empty>>/>/<</< redirection unexpected
-
-in parser when assigining fds:
->>/>/<</<empty newline unexpected
-		  (token[0] == '\0' && token->p_op == (int)">>/>/<</<" && !(temp->next)) newline unexpected
-*/
-
-		/*
-		  (token[0] == '\0' && temp->next && temp->next->p_op == ST_CMD_BRK) ";" unexpected
-		  && (temp->next->next && temp->next->next->p_op == ST_CMD_BRK) ";;" unexpected
-		 */
-		/*
-		  ^ or empty&& "&&" unexpected
-		  (token[0] == '\0' && temp->next && temp->next->p_op == ST_ONSCCS) "&&" unexpected
-		  &&empty  hsh: newline unexpected
-		  (token[0] == '\0' && token->p_op == ST_ONSCCS && !(temp->next)) newline unexpected
-		  &&empty;/&&/||/| ";/&&/||/|" unexpected
-		  (token[0] == '\0' && token->p_op == ST_ONSCCS && && temp->next->p_op == (int)";/&&/||/|" ) ";/&&/||/|" unexpected
-		*/
-		/*
-		  ^ or empty|| "||" unexpected
-		  (token[0] == '\0' && temp->next && temp->next->p_op == ST_ONFAIL) "||" unexpected
-		  ||empty  hsh: newline unexpected
-		  (token[0] == '\0' && token->p_op == ST_ONFAIL && !(temp->next)) newline unexpected
-		  ||empty;/&&/||/| ";/&&/||/|" unexpected
-		  (token[0] == '\0' && token->p_op == ST_ONFAIL && && temp->next->p_op == (int)";/&&/||/|" ) ";/&&/||/|" unexpected
-		*/
-
-		/*
-		  ^ or empty| "|" unexpected
-		  (token[0] == '\0' && token->next && token->next->p_op == ST_PIPE) "|" unexpected
-		  |empty  hsh: newline unexpected
-		  (token[0] == '\0' && token->p_op == ST_PIPE && !(temp->next)) newline unexpected
-		  |empty;/&&/||/| ";/&&/||/|" unexpected
-		  (token[0] == '\0' && token->p_op == ST_PIPE && temp->next->p_op == (int)";/&&/||/|" ) ";/&&/||/|" unexpected
-		 */
-		/*
-		  at lexing stage:
-		  >>/>/<</<empty>>/>/<</< redirection unexpected
-		  (token[0] == '\0' && token->p_op == (int)">>/>/<</<" &&
-		  temp->next && temp->next->p_op == (int)">>/>/<</<" ) redirection unexpected
-		*/

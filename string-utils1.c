@@ -105,6 +105,58 @@ int _atoi(char *str)
 }
 
 
+/* original itoa adatped from printf di_print */
+/*
+ * refactor adapted from u_print, but casting int to unsigned absolute value to
+ * manage over/underflow
+ */
+/**
+ * di_print - prints signed int as string when called by format tag in printf
+ * @args: variable argument coming from _printf
+ * Return: output length in bytes/chars
+ */
+char *_itoa(int n)
+{
+        char *n_str = NULL;
+        unsigned int pow_10 = 1, temp;
+        int i, len = 1;
+	bool neg = false;
+
+	if (n < 0)
+	{
+                neg = true;
+		len++; /* for '-' */
+                temp = (unsigned int)-n;
+        }
+        else
+                temp = (unsigned int)n;
+
+        while (pow_10 <= (temp / 10))
+	{
+                pow_10 *= 10;
+		len++;
+	}
+
+        n_str = malloc(sizeof(char) * (len + 1));
+        if (!n_str)
+	{
+		fprintf(stderr, "_itoa: malloc failure\n");
+                return (NULL);
+	}
+
+	if (neg)
+		n_str[0] = '-';
+
+        for (i = neg ? 1 : 0; i < len; i++)
+        {
+                n_str[i] = ((temp / pow_10) + '0');
+                temp %= pow_10;
+                pow_10 /= 10;
+        }
+        n_str[len] = '\0';
+
+        return (n_str);
+}
 
 
 /* strArrDup: std: malloc */
@@ -168,6 +220,9 @@ void strArrFree(char **array)
 		free(array);
 	}
 }
+
+
+
 
 
 /* !!! for testing only */

@@ -14,7 +14,7 @@
 #define ST_RD_IN    8
 #define ST_MACRO_CT 9
 
-#define WHTSPC " \t\v" /* full set " \t\n\v\f\r" */
+#define WHTSPC      " \t\v" /* full set " \t\n\v\f\r" */
 
 #include <errno.h>
 #include <stdbool.h>
@@ -43,8 +43,19 @@ typedef struct st_list_s
 	struct st_list_s *next;
 } st_list;
 
-/* !!! needed to emulate sh error return when running scripts (syntax errors in a script would produce "<sname>: 1: <sname>: Syntax error: <delim> unexpected"*/
-/* alternately, exec and script name, stdinfd_bup could all be stored as shell vars */
+/* command list */
+/* used for parsing and execution */
+typedef struct cmd_list_s
+{
+        st_list *tokens; /* command tokens (redirect tokens excised) !!! convert to char** here or in exec func? */
+	int input_fd; /* both for pipes and single redirs */
+	int output_fd; /* both for pipes and single redirs */
+	bool append;  /* true: open redir with append option (may be unecsessary if handled when opening fd from tokens) */
+	char *heredoc; /* heredoc buffer collected with PS2 loop */
+	int logic_op; /* ST_NONE ST_ONSCCS or ST_ONFAIL (determines how to screen retval of previous command)*/
+	struct cmd_list_s *next;
+} cmd_list;
+
 /**
  * information needed globally by most subroutines
  */
@@ -58,11 +69,17 @@ typedef struct sh_state_s
 /*
 	kv_list *sh_vars;
 	kv_list *aliases;
-	CMD *commands;
-	*/
-	int stdinfd_bup; /* if running script or file arg to main, -1 default */
-	int init_fd; /* ~/.hshrc script */
-	int arg_fd; /* main(argv[1]) script */
+*/
+	cmd_list *commands;
+/*
+	char **var_copies; * copies of expanded variable values for lexing by whtspc *
+	char **alias_copies; * copies of expanded alias values for full lexing *
+*/
+/*
+	int stdinfd_bup; * if running script or file arg to main, -1 default *
+	int init_fd; * ~/.hshrc script *
+	int arg_fd; * main(argv[1]) script *
+*/
 } sh_state;
 
 
@@ -101,14 +118,10 @@ void removeKVPair(kv_list **head, char *key);
 
 
 /* lexing.c */
-/* countTokens and tokenize now vestigial unless for testing */
-int countTokens(char *input, char *delim, bool by_substr);
-char **tokenize(int t_count, char *line, char *delim, bool by_substr);
-
 st_list *lineLexer(char *line, sh_state *state);
-
-char *_itoa(int n);
-
+/*
+int varExpansion(st_list *head, sh_state *state);
+*/
 void trimComments(char *line, char *whtsp);
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code);
 int lexByWhtSpc(st_list *begin, st_list *end);
@@ -139,18 +152,20 @@ int validateSyntax(st_list *head, sh_state *state);
 
 
 /* string-utils1.c */
+bool strictAtoiCheck(char *str);
+int _atoi(char *str);
+char *_itoa(int n);
+char **strArrDup(char **array);
+void strArrFree(char **array);
+
+
+/* string-utils2.c */
 char *_strndup(char *str, unsigned int n);
 char *_strdup(char *str);
 int _strcmp(char *s1, char *s2);
 int _strncmp(char *s1, char *s2, unsigned int n);
 unsigned int _strlen(char *s);
-
-
-/* string-utils2.c */
-bool strictAtoiCheck(char *str);
-int _atoi(char *str);
-char **strArrDup(char **array);
-void strArrFree(char **array);
+/* for testing */
 void prStrArrInLine(char **str_arr);
 
 

@@ -25,11 +25,7 @@
 void shellLoop(sh_state *state)
 {
 	char *line = NULL;
-/*
-	char **tokens = NULL;
-	int t_count;
-*/
-	st_list *s_tokens = NULL; /* eventaully rename to `tokens` */
+	st_list *s_tokens = NULL;
 
 	state->loop_count = 1;
 	do {
@@ -38,15 +34,14 @@ void shellLoop(sh_state *state)
 		printf("\tshellLoop: setScriptFds done\n");
 		*/
 		line = _readline(state);
-
-		if (line)
+/*
+		optional screen for ";;" error on raw line to mimic sh
+*/
+		if ((s_tokens = lineLexer(line, state)) != NULL)
 		{
-			s_tokens = lineLexer(line, state);
-
-			if (s_tokens)
-				if ((validateSyntax(s_tokens, state) == 0) &&
-				    state->loop_count != 1)
-					state->loop_count++; /* only after no syntax error */
+			if ((validateSyntax(s_tokens, state) == 0) &&
+			    state->loop_count != 1)
+				state->loop_count++; /* only after no syntax error */
 /*
 				else
 					skip parsing and execution;
@@ -55,30 +50,6 @@ void shellLoop(sh_state *state)
 
 			freeSTList(&s_tokens);
 		}
-/*
-		printf("\tshellLoop: _readline: %s\n", line);
-*/
-		/*
-		if (!line)
-		{
-		        init_script_EOF = unsetScriptFds(state);
-			printf("\tshellLoop: unsetScriptFds done\n");
-			continue;
-		}
-		*/
-/*
-		printf("\tshellLoop: tokenizing\n");
-*/
-/*
-		if ((t_count = countTokens(line, WHTSPC, false)) > 0 &&
-		    (tokens = tokenize(t_count, line, WHTSPC, false)) != NULL)
-		{
-*/
-/*
-			printf("\tshellLoop: valid tokens found: ");
-		        prStrArrInLine(tokens);
-			printf("\n");
-*/
 /* !!! should builtin be changed to a return value to checkBuiltins? */
 /* !!! currently __exit doesn't free line or tokens */
 /*
@@ -175,12 +146,14 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 	/*
 	state->sh_vars = sh_vars;
 	state->aliases = NULL;
-	state->commands = NULL;
 	*/
-	state->stdinfd_bup = -1; /* -1 serves as NULL state for fds here */
+	state->commands = NULL;
+
+/*
+	state->stdinfd_bup = -1; * -1 serves as NULL state for fds here *
 	state->init_fd = -1;
 	state->arg_fd = -1;
-
+*/
 	return (0);
 }
 
@@ -199,11 +172,21 @@ void freeShellState(sh_state *state)
 		freeKVList(&(state->env_vars));
 
 	/*
+	if (state->sh_vars)
+		freeKVList(&(state->sh_vars));
+
 	if (state->aliases)
 		freeKVList(&(state->aliases));
-
+	*/
 	if (state->commands)
-	        freeCMDList(&(state->commands));
+	        freeCmdList(&(state->commands));
+
+	/*
+	if (state->var_copies)
+		strArrFree(state->var_copies);
+
+	if (state->alias_copies)
+		strArrFree(state->alias_copies);
 	*/
 }
 
