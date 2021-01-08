@@ -31,8 +31,8 @@ void shellLoop(sh_state *state)
 */
 	st_list *s_tokens = NULL; /* eventaully rename to `tokens` */
 
+	state->loop_count = 1;
 	do {
-		state->loop_count++; /* later will happen in lineLexer only after no syntax error */
 		/*
 		setScriptFds(state);
 		printf("\tshellLoop: setScriptFds done\n");
@@ -41,8 +41,16 @@ void shellLoop(sh_state *state)
 
 		if (line)
 		{
-			s_tokens = lineLexer(line);
+			s_tokens = lineLexer(line, state);
 
+			if (s_tokens)
+				if ((validateSyntax(s_tokens, state) == 0) &&
+				    state->loop_count != 1)
+					state->loop_count++; /* only after no syntax error */
+/*
+				else
+					skip parsing and execution;
+ */
 			testPrSTList(s_tokens);
 
 			freeSTList(&s_tokens);

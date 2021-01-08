@@ -85,7 +85,8 @@ int _cd(char *dir_name, sh_state *state);
 
 
 /* errors.c */
-void commandNotFound(char *cmd, sh_state *state);
+void cmdNotFoundErr(char *cmd, sh_state *state);
+void syntaxErr(char *bad_op, sh_state *state);
 
 
 /* kv_lists.c */
@@ -104,10 +105,13 @@ void removeKVPair(kv_list **head, char *key);
 int countTokens(char *input, char *delim, bool by_substr);
 char **tokenize(int t_count, char *line, char *delim, bool by_substr);
 
-st_list *lineLexer(char *line);
+st_list *lineLexer(char *line, sh_state *state);
+
+char *_itoa(int n);
+
 void trimComments(char *line, char *whtsp);
-int lexByDelim(st_list *head, char *delim, size_t p_op_code);
-int lexByWhtSpc(st_list *head);
+int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code);
+int lexByWhtSpc(st_list *begin, st_list *end);
 char *strtokSubstr(char *str, char *delim);
 
 
@@ -130,6 +134,8 @@ char *_readline(sh_state *state);
 void runCommand(char **args, char *line, sh_state *state);
 bool checkBuiltins(char **tokens, int token_count,
 		   char *line, sh_state *state);
+
+int validateSyntax(st_list *head, sh_state *state);
 
 
 /* string-utils1.c */
