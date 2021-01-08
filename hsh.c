@@ -149,11 +149,10 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 	*/
 	state->commands = NULL;
 
-/*
-	state->stdinfd_bup = -1; * -1 serves as NULL state for fds here *
+	state->stdinfd_bup = -1; /* -1 serves as NULL state for fds here */
 	state->init_fd = -1;
 	state->arg_fd = -1;
-*/
+
 	return (0);
 }
 
@@ -178,9 +177,10 @@ void freeShellState(sh_state *state)
 	if (state->aliases)
 		freeKVList(&(state->aliases));
 	*/
+/*
 	if (state->commands)
 	        freeCmdList(&(state->commands));
-
+*/
 	/*
 	if (state->var_copies)
 		strArrFree(state->var_copies);

@@ -75,11 +75,10 @@ typedef struct sh_state_s
 	char **var_copies; * copies of expanded variable values for lexing by whtspc *
 	char **alias_copies; * copies of expanded alias values for full lexing *
 */
-/*
-	int stdinfd_bup; * if running script or file arg to main, -1 default *
-	int init_fd; * ~/.hshrc script *
-	int arg_fd; * main(argv[1]) script *
-*/
+	int stdinfd_bup; /* if running script or file arg to main, -1 default */
+	int init_fd; /* ~/.hshrc script */
+	int arg_fd; /* main(argv[1]) script */
+
 } sh_state;
 
 
