@@ -26,6 +26,7 @@ void shellLoop(sh_state *state)
 {
 	char *line = NULL;
 	st_list *s_tokens = NULL;
+	cmd_list *commands = NULL;
 
 	state->loop_count = 1;
 	do {
@@ -37,18 +38,25 @@ void shellLoop(sh_state *state)
 /*
 		optional screen for ";;" error on raw line to mimic sh
 */
+
 		if ((s_tokens = lineLexer(line, state)) != NULL)
 		{
-			if ((validateSyntax(s_tokens, state) == 0) &&
-			    state->loop_count != 1)
-				state->loop_count++; /* only after no syntax error */
+
+			testPrSTList(s_tokens);
+
+			if (validateSyntax(s_tokens, state) == 0)
+			{
+				if (state->loop_count != 1)
+					state->loop_count++; /* only after no syntax error */
 /*
 				else
 					skip parsing and execution;
- */
-			testPrSTList(s_tokens);
+*/
+				commands = STListToCmdList(s_tokens, state);
+				printf("shellLoop: commands found:\n");
+				testPrintCmdList(commands);
+			}
 
-			freeSTList(&s_tokens);
 		}
 /* !!! should builtin be changed to a return value to checkBuiltins? */
 /* !!! currently __exit doesn't free line or tokens */
@@ -62,6 +70,8 @@ void shellLoop(sh_state *state)
 		}
 */
 /* !!! experiment with freeing line just before _readline */
+		if (commands)
+			freeCmdList(&commands);
 		if (line)
 		{
 /*

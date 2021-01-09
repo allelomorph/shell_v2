@@ -47,11 +47,12 @@ typedef struct st_list_s
 /* used for parsing and execution */
 typedef struct cmd_list_s
 {
-        st_list *tokens; /* command tokens (redirect tokens excised) !!! convert to char** here or in exec func? */
+        st_list *s_tokens; /* command tokens (redirect tokens excised) !!! convert to char** here or in exec func? */
 	int input_fd; /* both for pipes and single redirs */
 	int output_fd; /* both for pipes and single redirs */
 	bool append;  /* true: open redir with append option (may be unecsessary if handled when opening fd from tokens) */
 	char *heredoc; /* heredoc buffer collected with PS2 loop */
+/* !!! rename since it now can also contain ST_PIPE */
 	int logic_op; /* ST_NONE ST_ONSCCS or ST_ONFAIL (determines how to screen retval of previous command)*/
 	struct cmd_list_s *next;
 } cmd_list;
@@ -100,6 +101,12 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 int _cd(char *dir_name, sh_state *state);
 
 
+/* cmd_lists.c */
+void freeCmdList(cmd_list **head);
+cmd_list *createNewCmd(void);
+void testPrintCmdList(cmd_list *head);
+
+
 /* errors.c */
 void cmdNotFoundErr(char *cmd, sh_state *state);
 void syntaxErr(char *bad_op, sh_state *state);
@@ -125,6 +132,10 @@ void trimComments(char *line, char *whtsp);
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code);
 int lexByWhtSpc(st_list *begin, st_list *end);
 char *strtokSubstr(char *str, char *delim);
+
+
+/* parsing.c */
+cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state);
 
 
 /* st_lists.c */

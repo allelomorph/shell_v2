@@ -241,4 +241,3 @@ int validateSyntax(st_list *head, sh_state *state)
 
 	return (0);
 }
-

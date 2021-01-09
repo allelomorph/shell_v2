@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 
+/* individual st_list nodes can be freed directly */
 void freeSTList(st_list **head)
 {
         st_list *temp1 = NULL, *temp2 = NULL;
