@@ -39,11 +39,12 @@ void shellLoop(sh_state *state)
 		optional screen for ";;" error on raw line to mimic sh
 */
 
-		if ((s_tokens = lineLexer(line, state)) != NULL)
+		if (dblSemicolonErr(line, state) == 0 &&
+		    (s_tokens = lineLexer(line, state)) != NULL)
 		{
-
+/*
 			testPrSTList(s_tokens);
-
+*/
 			if (validateSyntax(s_tokens, state) == 0)
 			{
 				if (state->loop_count != 1)

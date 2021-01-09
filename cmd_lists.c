@@ -20,9 +20,6 @@ void freeCmdList(cmd_list **head)
 		if (temp1->s_tokens)
 			freeSTList(&(temp1->s_tokens));
 
-		if (temp1->heredoc)
-			free(temp1->heredoc);
-
 		free(temp1);
 
 		temp1 = temp2;
@@ -46,9 +43,7 @@ cmd_list *createNewCmd(void)
 	new->s_tokens = NULL;
 	new->input_fd = -1;
 	new->output_fd = -1;
-	new->append = false;
-	new->heredoc = NULL;
-	new->logic_op = ST_NONE;
+	new->seq_op = ST_NONE;
 	new->next = NULL;
 
 	return (new);
@@ -81,11 +76,7 @@ void testPrintCmdList(cmd_list *head)
 
 		printf("\t\toutput_fd: %i\n", cmd_temp->output_fd);
 
-		printf("\t\tappend: %s\n", cmd_temp->append ? "true" : "false");
-
-		printf("\t\theredoc: %s\n", cmd_temp->heredoc);
-
-		printf("\t\tlogic_op: %s\n", ops[cmd_temp->logic_op]);
+		printf("\t\tseq_op: %s\n", ops[cmd_temp->seq_op]);
 
 		cmd_temp = cmd_temp->next;
 	}

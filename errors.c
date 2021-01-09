@@ -66,3 +66,31 @@ void syntaxErr(char *bad_op, sh_state *state)
 
 	state->exit_code = 2; /* 2: sh code for sh internal failures */
 }
+
+
+
+/* workaround to produce ";;" error as sh does - lineLexer sees adjacent semicolons as the same as ";whtspc;" */
+int dblSemicolonErr(char *line, sh_state *state)
+{
+	int i;
+
+	if (!state)
+	{
+		fprintf(stderr, "dblSemicolonErr: missing arguments\n");
+		return (1);
+	}
+
+	if (!line)
+		return (1);
+
+	for (i = 0; line[i + 1]; i++)
+	{
+		if (line[i] == ';' && line[i + 1] == ';')
+		{
+			syntaxErr("\";;\"", state);
+			return (1);
+		}
+	}
+
+	return (0);
+}

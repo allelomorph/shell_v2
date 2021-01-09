@@ -50,10 +50,7 @@ typedef struct cmd_list_s
         st_list *s_tokens; /* command tokens (redirect tokens excised) !!! convert to char** here or in exec func? */
 	int input_fd; /* both for pipes and single redirs */
 	int output_fd; /* both for pipes and single redirs */
-	bool append;  /* true: open redir with append option (may be unecsessary if handled when opening fd from tokens) */
-	char *heredoc; /* heredoc buffer collected with PS2 loop */
-/* !!! rename since it now can also contain ST_PIPE */
-	int logic_op; /* ST_NONE ST_ONSCCS or ST_ONFAIL (determines how to screen retval of previous command)*/
+	int seq_op; /* ST_NONE ST_CMD_BRK ST_ONSCCS ST_ONFAIL or ST_PIPE (determines how to screen retval of previous command)*/
 	struct cmd_list_s *next;
 } cmd_list;
 
@@ -110,6 +107,7 @@ void testPrintCmdList(cmd_list *head);
 /* errors.c */
 void cmdNotFoundErr(char *cmd, sh_state *state);
 void syntaxErr(char *bad_op, sh_state *state);
+int dblSemicolonErr(char *line, sh_state *state);
 
 
 /* kv_lists.c */
@@ -135,6 +133,7 @@ char *strtokSubstr(char *str, char *delim);
 
 
 /* parsing.c */
+void trimEmptyFinalST(st_list *head);
 cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state);
 
 
