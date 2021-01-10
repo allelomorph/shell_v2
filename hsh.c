@@ -45,6 +45,7 @@ void shellLoop(sh_state *state)
 /*
 			testPrSTList(s_tokens);
 */
+/* !!! eventually in same test as dblSem and lineLexer */
 			if (validateSyntax(s_tokens, state) == 0)
 			{
 				if (state->loop_count != 1)
@@ -74,12 +75,7 @@ void shellLoop(sh_state *state)
 		if (commands)
 			freeCmdList(&commands);
 		if (line)
-		{
-/*
-			printf("\tshellLoop: freeing line @:%p\n", (void *)line);
-*/
 			free(line);
-		}
 
 	} while (line/* || init_script_EOF*/); /* freed pointers will not automatically == NULL */
 /*

@@ -194,13 +194,16 @@ bool checkBuiltins(char **tokens, int token_count,
 	else
 		builtin = false;
 
-	state->exit_code = exit_code;
+	if (builtin)
+		state->exit_code = exit_code;
+
 	return (builtin);
 }
 
 
-/* for now also omitting the special ";;" error sh gives for two consecutive semicolons, could be done before lexing with a simple scan of the unprocessed line */
+/* for now also omitting the special ";;" error sh gives for two consecutive semicolons - done in shellLoop now */
 /* bash and sh wait for secondary input when &&/||/| are followed by newline */
+/* "newline unepected" errors returned by sh after incrementing loop counter, done in assignIORedirects */
 int validateSyntax(st_list *head, sh_state *state)
 {
 	st_list *temp = NULL;

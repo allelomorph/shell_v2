@@ -139,6 +139,7 @@ cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state);
 
 /* st_lists.c */
 void freeSTList(st_list **head);
+char **STListToStrArr(st_list *head);
 /* testing */
 void testPrSTList(st_list *head);
 
@@ -174,6 +175,8 @@ char *_strdup(char *str);
 int _strcmp(char *s1, char *s2);
 int _strncmp(char *s1, char *s2, unsigned int n);
 unsigned int _strlen(char *s);
+char *_strcat(char *dest, char *src);
+
 /* for testing */
 void prStrArrInLine(char **str_arr);
 

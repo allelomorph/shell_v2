@@ -49,3 +49,35 @@ void testPrSTList(st_list *head)
 		temp = temp->next;
 	}
 }
+
+
+char **STListToStrArr(st_list *head)
+{
+	st_list *temp = NULL;
+	int i, list_len = 0;
+	char **str_arr = NULL;
+
+	temp = head;
+	while (temp)
+	{
+		list_len++;
+		temp = temp->next;
+	}
+
+	str_arr = malloc(sizeof(char *) * (list_len + 1));
+	if (!str_arr)
+	{
+		fprintf(stderr, "STListToStrArr: malloc failure\n");
+		return (NULL);
+	}
+
+	temp = head;
+	for (i = 0; i < list_len; i++)
+	{
+		str_arr[i] = temp->token;
+		temp = temp->next;
+	}
+	str_arr[list_len] = NULL;
+
+	return (str_arr);
+}

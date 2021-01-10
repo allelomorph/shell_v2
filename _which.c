@@ -99,22 +99,22 @@ char *testExecPath(char *path, char *filename, sh_state *state)
  * Return: string containing full valid path of executable, original
  * av[0] if none found, or NULL on failure
  */
-char *_which(char *cmd, sh_state *state)
+char *_which(char *exec, sh_state *state)
 {
 	char *abs_path = NULL, *PATH_cpy = NULL, *token = NULL;
 	kv_list *pwd = NULL, *path = NULL;
 
-	if (!cmd || !state)
+	if (!exec || !state)
 		return (NULL);
 	/* return unmodified if already accessible */
-	if ((abs_path = testExecPath("", cmd, state)) != NULL)
+	if ((abs_path = testExecPath("", exec, state)) != NULL)
 		return (abs_path);
 	/* search for PWD and PATH */
 	pwd = getKVPair(state->env_vars, "PWD");
 	path = getKVPair(state->env_vars, "PATH");
 	/* check PWD first */
 	if (pwd && pwd->value)
-		if ((abs_path = testExecPath(pwd->value, cmd, state)) != NULL)
+		if ((abs_path = testExecPath(pwd->value, exec, state)) != NULL)
 			return (abs_path);
 	/* (path->value == NULL) will simply fail the first call to strtok */
 	if (path)
@@ -122,7 +122,7 @@ char *_which(char *cmd, sh_state *state)
 	/* no need to count or store tokens, first valid abs_path returned */
 	if ((token = strtok(PATH_cpy, ":")) != NULL)
 	{
-		if ((abs_path = testExecPath(token, cmd, state)) != NULL)
+		if ((abs_path = testExecPath(token, exec, state)) != NULL)
 		{
 			free(PATH_cpy);
 			return (abs_path);
@@ -130,7 +130,7 @@ char *_which(char *cmd, sh_state *state)
 	}
 	while ((token = strtok(NULL, ":")) != NULL)
 	{
-		if ((abs_path = testExecPath(token, cmd, state)) != NULL)
+		if ((abs_path = testExecPath(token, exec, state)) != NULL)
 		{
 			free(PATH_cpy);
 			return (abs_path);

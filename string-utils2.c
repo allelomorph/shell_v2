@@ -187,3 +187,46 @@ unsigned int _strlen(char *s)
 
 	return (len);
 }
+
+
+/**
+ * _strcat - concatenates two strings
+ * @dest: string to have content added from str
+ * @src: string to be read
+ * Return: pointer to dest
+ */
+char *_strcat(char *dest, char *src)
+{
+        char *d_start = NULL;
+        char *s_start = NULL;
+
+	if (!dest || !src)
+	{
+		fprintf(stderr, "_strcat: missing arguments");
+		return (NULL);
+	}
+
+        d_start = dest;
+        s_start = src;
+
+	/* increment dest to terminal '\0' */
+        while (*dest)
+                dest++;
+
+	/* increment through src addresses, assigning content to end of dest */
+        while (*src)
+        {
+                *dest = *src;
+                src++;
+                dest++;
+        }
+
+	/* new terminal '\0' */
+        dest++;
+        *dest = '\0';
+
+        dest = d_start;
+        src = s_start;
+
+        return (dest);
+}

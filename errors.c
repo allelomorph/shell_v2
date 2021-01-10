@@ -83,7 +83,7 @@ int dblSemicolonErr(char *line, sh_state *state)
 	if (!line)
 		return (1);
 
-	for (i = 0; line[i + 1]; i++)
+	for (i = 0; line[i] && line[i + 1]; i++)
 	{
 		if (line[i] == ';' && line[i + 1] == ';')
 		{
@@ -93,4 +93,54 @@ int dblSemicolonErr(char *line, sh_state *state)
 	}
 
 	return (0);
+}
+
+
+void cantOpenScriptErr(char *filename, sh_state *state);
+void cantOpenScriptErr(char *filename, sh_state *state)
+{
+	char *script_n = NULL;
+
+	if (!filename || !state)
+	{
+		fprintf(stderr, "cantOpenScriptErr: missing arguments\n");
+		return;
+	}
+
+	fprintf(stderr, "%s: %u: Can't open %s\n",
+		state->exec_name, state->loop_count, filename);
+
+	state->exit_code = 127; /* sh code for sh script open failures */
+}
+
+
+void cantOpenFileErr(char *filename, sh_state *state);
+void cantOpenFileErr(char *filename, sh_state *state)
+{
+	char *script_n = NULL;
+
+	if (!filename || !state)
+	{
+		fprintf(stderr, "cantOpenFileErr: missing arguments\n");
+		return;
+	}
+
+	if (state->stdinfd_bup != -1) /* either init or arg script is open */
+	{
+		script_n = (state->init_fd != -1) ?
+			"~/.hshrc" : state->scrp_name;
+
+		fprintf(stderr, "%s: %u: %s: cannot open %s",
+			script_n, state->loop_count,
+			script_n, bad_op);
+		perror("");
+	}
+	else
+	{
+		fprintf(stderr, "%s: %u: cannot open %s",
+			state->exec_name, state->loop_count, filename);
+		perror("");
+	}
+
+	state->exit_code = 2; /* 2: sh code for sh internal failures */
 }

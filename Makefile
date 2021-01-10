@@ -5,6 +5,7 @@ CC = gcc
 SRC = hsh.c \
 	builtins.c \
 	errors.c \
+	execution.c \
 	cmd_lists.c \
 	lexing.c \
 	kv_lists.c \

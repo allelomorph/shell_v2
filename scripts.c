@@ -54,12 +54,7 @@ void checkInitScript(sh_state *state)
 	/* open file, store fd in state */
 	new_fd = open(init_path, O_RDONLY);
 	if (new_fd == -1)
-	{
-/* !!! cantOpenError subroutine maybe? if all the error returns are in one place we can more easily audit */
-		fprintf(stderr, "%s: %u: Can't open %s\n",
-			state->exec_name, state->loop_count, init_path);
-		state->exit_code = 127;
-	}
+		cantOpenScriptErr(init_path, state);
 	else
 		state->init_fd = new_fd;
 
@@ -76,11 +71,7 @@ void checkArgScript(char *file_path, sh_state *state)
 
 	new_fd = open(file_path, O_RDONLY);
 	if (new_fd == -1)
-	{
-		fprintf(stderr, "%s: %u: Can't open %s\n",
-			state->exec_name, state->loop_count, file_path);
-		state->exit_code = 127;
-	}
+		cantOpenScriptErr(file_path, state);
 	else
 	{
 	        fp_dup = _strdup(file_path);
