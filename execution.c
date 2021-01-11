@@ -33,24 +33,22 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 		fprintf(stderr, "executeCommands: missing args\n");
 		return;
 	}
-
+	if (_strcmp(head->s_tokens->token, "") == 0)
+		return; /* no delimiters, only whitespace in line */
 	temp = head;
 	while (temp)
 	{
-		/* check if need to skip current commnand */
+		/* check if need to skip current command */
 		if ((temp->seq_op == ST_ONSCCS && state->exit_code != 0) ||
 		    (temp->seq_op == ST_ONFAIL && state->exit_code == 0))
-		{
-			/* skip commands until semicolon or end of list */
+		{ /* skip commands until semicolon or end of list */
 			while (temp && temp->seq_op != ST_CMD_BRK)
 				temp = temp->next;
 			continue;
 		}
-
 		assignIORedirects(temp, state);
 		setInputFD(temp, state);
 		setOutputFD(temp, state);
-
 		if (checkBuiltins(temp->s_tokens, head, line, state))
 		{
 			restoreStdFDs(state);

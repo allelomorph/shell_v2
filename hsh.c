@@ -46,9 +46,12 @@ void shellLoop(sh_state *state)
 				state->loop_count++;
 
 			commands = STListToCmdList(s_tokens, state);
+/*
 			printf("shellLoop: commands found:\n");
 			testPrintCmdList(commands);
+*/
 			executeCommands(commands, line, state);
+
 		}
 
 /* !!! experiment with freeing line just before _readline */
