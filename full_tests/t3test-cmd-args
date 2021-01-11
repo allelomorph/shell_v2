@@ -7,7 +7,7 @@ for file in scripts/t3-*; do
     echo "-->$?"
     cat $file | ./hsh
     echo "-->$?"
-    cat $file | valgrind ./hsh
+    cat $file | valgrind --track-fds=yes ./hsh
 
     echo "-->return or ctrl+d to continue"
     read

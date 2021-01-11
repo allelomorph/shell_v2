@@ -14,7 +14,7 @@
 #define ST_RD_IN    8
 #define ST_MACRO_CT 9
 
-#define WHTSPC " \t\v" /* full set " \t\n\v\f\r" */
+#define WHTSPC      " \t\v" /* full set " \t\n\v\f\r" */
 
 #include <errno.h>
 #include <stdbool.h>
@@ -43,8 +43,17 @@ typedef struct st_list_s
 	struct st_list_s *next;
 } st_list;
 
-/* !!! needed to emulate sh error return when running scripts (syntax errors in a script would produce "<sname>: 1: <sname>: Syntax error: <delim> unexpected"*/
-/* alternately, exec and script name, stdinfd_bup could all be stored as shell vars */
+/* command list */
+/* used for parsing and execution */
+typedef struct cmd_list_s
+{
+        st_list *s_tokens; /* command tokens (redirect tokens excised) !!! convert to char** here or in exec func? */
+	int input_fd; /* both for pipes and single redirs */
+	int output_fd; /* both for pipes and single redirs */
+	int seq_op; /* ST_NONE ST_CMD_BRK ST_ONSCCS ST_ONFAIL or ST_PIPE (determines how to screen retval of previous command)*/
+	struct cmd_list_s *next;
+} cmd_list;
+
 /**
  * information needed globally by most subroutines
  */
@@ -58,11 +67,19 @@ typedef struct sh_state_s
 /*
 	kv_list *sh_vars;
 	kv_list *aliases;
-	CMD *commands;
-	*/
+*/
+/* !!! still unused? */
+	cmd_list *commands;
+/*
+	char **var_copies; * copies of expanded variable values for lexing by whtspc *
+	char **alias_copies; * copies of expanded alias values for full lexing *
+*/
+	int child_stdin_bup;
+	int child_stdout_bup;
 	int stdinfd_bup; /* if running script or file arg to main, -1 default */
 	int init_fd; /* ~/.hshrc script */
 	int arg_fd; /* main(argv[1]) script */
+
 } sh_state;
 
 
@@ -75,7 +92,7 @@ void freeShellState(sh_state *state);
 
 /* builtins.c */
 int _env(sh_state *state);
-void __exit(char *code, char *line, char **tokens, sh_state *state);
+void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state);
 int _setenv(char *var, char *value, sh_state *state);
 int _unsetenv(char *var, sh_state *state);
 /* eventually "_cd.c" */
@@ -84,9 +101,35 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 int _cd(char *dir_name, sh_state *state);
 
 
+/* cmd_lists.c */
+void freeCmdList(cmd_list **head);
+cmd_list *createNewCmd(void);
+void testPrintCmdList(cmd_list *head);
+
+
 /* errors.c */
 void cmdNotFoundErr(char *cmd, sh_state *state);
 void syntaxErr(char *bad_op, sh_state *state);
+int dblSemicolonErr(char *line, sh_state *state);
+void cantOpenScriptErr(char *filename, sh_state *state);
+void cantOpenFileErr(char *filename, sh_state *state);
+void cantCdToErr(char *dirname, sh_state *state);
+
+
+/* execution.c */
+void executeCommands(cmd_list *head, char *line, sh_state *state);
+void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state);
+
+void restoreStdFDs(sh_state *state);
+void setInputFD(cmd_list *cmd, sh_state *state);
+void setOutputFD(cmd_list *cmd, sh_state *state);
+int assignIORedirects(cmd_list *cmd, sh_state *state);
+
+void pipeSegment(cmd_list *cmd, sh_state *state);
+void setHeredoc(cmd_list *cmd, char *delim, sh_state *state);
+char *getHeredoc(char *delim, sh_state *state);
+
+char *emptyCharBuff(unsigned int size);
 
 
 /* kv_lists.c */
@@ -101,22 +144,24 @@ void removeKVPair(kv_list **head, char *key);
 
 
 /* lexing.c */
-/* countTokens and tokenize now vestigial unless for testing */
-int countTokens(char *input, char *delim, bool by_substr);
-char **tokenize(int t_count, char *line, char *delim, bool by_substr);
-
 st_list *lineLexer(char *line, sh_state *state);
-
-char *_itoa(int n);
-
+/*
+int varExpansion(st_list *head, sh_state *state);
+*/
 void trimComments(char *line, char *whtsp);
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code);
 int lexByWhtSpc(st_list *begin, st_list *end);
 char *strtokSubstr(char *str, char *delim);
 
 
+/* parsing.c */
+void trimEmptyFinalST(st_list *head);
+cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state);
+
+
 /* st_lists.c */
 void freeSTList(st_list **head);
+char **STListToArgArr(st_list *head);
 /* testing */
 void testPrSTList(st_list *head);
 
@@ -130,27 +175,28 @@ int unsetScriptFds(sh_state *state);
 
 
 /* shellLoop-subr.c */
-char *_readline(sh_state *state);
-void runCommand(char **args, char *line, sh_state *state);
-bool checkBuiltins(char **tokens, int token_count,
-		   char *line, sh_state *state);
-
+char *_readline(bool PS1, sh_state *state);
+bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *state);
 int validateSyntax(st_list *head, sh_state *state);
 
 
 /* string-utils1.c */
+bool strictAtoiCheck(char *str);
+int _atoi(char *str);
+char *_itoa(int n);
+char **strArrDup(char **array);
+void strArrFree(char **array);
+
+
+/* string-utils2.c */
 char *_strndup(char *str, unsigned int n);
 char *_strdup(char *str);
 int _strcmp(char *s1, char *s2);
 int _strncmp(char *s1, char *s2, unsigned int n);
 unsigned int _strlen(char *s);
+char *_strcat(char *dest, char *src);
 
-
-/* string-utils2.c */
-bool strictAtoiCheck(char *str);
-int _atoi(char *str);
-char **strArrDup(char **array);
-void strArrFree(char **array);
+/* for testing */
 void prStrArrInLine(char **str_arr);
 
 

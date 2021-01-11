@@ -60,16 +60,14 @@ int _env(sh_state *state)
 /* __exit: sub: freeShellState */
 /* !!! needs other allocated memory besides state (line) to free before exit */
 /* or, it can set a flag to be seen by shellLoop to exit and free via main return path */
-void __exit(char *code, char *line, char **tokens, sh_state *state)
+void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state)
 {
 	int e_code;
 
 	if (code && code[0])
 	{
 		e_code = _atoi(code);
-/*
-		printf("\t\t\t__exit1 arg:'%s' evaluates to %i\n", code, e_code);
-*/
+
 		if (e_code < 0 || (e_code == 0 &&
 				   strictAtoiCheck(code) == false))
 		{
@@ -86,8 +84,8 @@ void __exit(char *code, char *line, char **tokens, sh_state *state)
 
 /* !!! is there a more elegant way to bring in tokens and line for freeing? maybe in state? */
 /* wait for CMD struct refactor */
-	free(tokens);
 	free(line);
+	freeCmdList(&cmd_head);
 	freeShellState(state);
 	exit(e_code);
 }
@@ -125,25 +123,13 @@ int _setenv(char *var, char *value, sh_state *state)
 	{
 		if (temp->value)
 			free(temp->value);
-/*
-		printf("\t\t\t_setenv1: setting existing key:%s to :%s\n", temp->key, value);
-*/
 		temp->value = _strdup(value);
 	}
-	else
-        {
-/*
-		printf("\t\t\t_setenv2: adding new key:%s with value:%s\n", var, value);
-*/
-		/* var not found */
-		if (addKVPair(&(state->env_vars), var, value) == NULL)
-/* !!! upgrade error return?? not standard sh error */
-		{
-			fprintf(stderr,
-				"_setenv: addKVPair failed for %s\n", var);
-			return (2);
-		}
-
+	else if (addKVPair(&(state->env_vars), var, value) == NULL)
+	{
+		fprintf(stderr,
+			"_setenv: addKVPair failed for %s\n", var);
+		return (2);
 	}
 
 	return (0);
@@ -154,8 +140,6 @@ int _setenv(char *var, char *value, sh_state *state)
 /* maybe this could be genrealized to unsetKey() to use with aliases and shell vars */
 int _unsetenv(char *var, sh_state *state)
 {
-	/* kv_list *temp= NULL; */
-
 	if (!state)
 	{
 		fprintf(stderr, "_unsetenv: missing state\n");
@@ -165,9 +149,6 @@ int _unsetenv(char *var, sh_state *state)
 	if (var == NULL)
 		return (0);
 
-/* !!! redundant since check is already inside removeKVPair */
-	/* temp = getKVPair(state->env_vars, var); */
-	/*if (temp)*/
 	removeKVPair(&(state->env_vars), var);
 
 	return (0);
@@ -206,13 +187,12 @@ kv_list *checkPWD(sh_state *state)
 			}
 		}
 	}
-/*
-	printf("\t\t\t\tcheckPWD1: returning PWD as :%s\n", pwd->value);
-*/
+
 	return (pwd);
 }
 
 
+/* !!! ~ should be treated as a variable expansion in lexer, not specially here */
 /* changeDir: std: chdir fprintf */
 /* changeDir: sub: _setenv */
 /* helper to _cd */
@@ -221,9 +201,6 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 	/* dest and pwd both not NULL, we need to swap into new dir */
 	if (access(dest, F_OK | X_OK) == 0 && chdir(dest) == 0)
 	{
-/*
-		if (_strcmp(dest, oldpwd->value) == 0) * "cd -" *
-*/
 		if (_strcmp(cd_arg, "-") == 0)
 		{
 			if (oldpwd->value)
@@ -233,22 +210,21 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 			/* avoids setting PWD to a OLDPWD freed by _setenv */
 			dest = _strdup(dest);
 		}
-
+/* _setenv dups its value arg */
 		_setenv("OLDPWD", pwd->value, state);
 		_setenv("PWD", dest, state);
 
-/*
-		if (_strcmp(dest, oldpwd->value) == 0) * "cd -" *
-*/
-		if (_strcmp(cd_arg, "-") == 0)
+		/* two cases copy is made in addition to one from _setenv */
+		if (_strcmp(cd_arg, "-") == 0 || cd_arg[0] == '~')
 			free(dest);
 
 		return (0);
 	}
 
-	fprintf(stderr, "%s: %u: cd: can't cd to %s\n",
-		state->exec_name, state->loop_count, dest);
+	if (cd_arg[0] == '~')
+		free(dest);
 
+	cantCdToErr(cd_arg, state);
 	return (2);
 }
 
@@ -260,6 +236,7 @@ int _cd(char *dir_name, sh_state *state)
 {
 	kv_list *home = NULL, *pwd = NULL, *oldpwd = NULL;
 	char *dest = NULL;
+	int dest_len = 0;
 
 	home = getKVPair(state->env_vars, "HOME");
 	oldpwd = getKVPair(state->env_vars, "OLDPWD");
@@ -280,19 +257,20 @@ int _cd(char *dir_name, sh_state *state)
 		else
 			return (_setenv("OLDPWD", pwd->value, state));
 	}
+	else if (dir_name[0] == '~' && home && home->value)
+	{
+		dest_len = (_strlen(dir_name + 1) + _strlen(home->value));
+		dest = malloc(sizeof(char) * (dest_len + 1));
+		if (!dest)
+		{
+			fprintf(stderr, "_cd: malloc failure\n");
+			return (1);
+		}
+		sprintf(dest, "%s%s", home->value, dir_name + 1);
+		dest[dest_len] = '\0';
+	}
 	else /* arg present and not '-' */
 		dest = dir_name;
 
 	return (changeDir(pwd, oldpwd, dir_name, dest, state));
 }
-
-/*
-	printf("\t\t\t_cd1: dir_name:%s HOME:%s OLDPWD:%s PWD:%s\n", dir_name, home ? home->value : NULL, oldpwd ? oldpwd->value : NULL, pwd ? pwd->value : NULL);
-*/
-
-/*
-	printf("\t\t\t_cd2: dest:%s @ %p\n", dest, (void *)dest);
-*/
-/*
-		printf("\t\t\t\tchangeDir1: setting OLDPWD to %p:%s\n", (void *)pwd->value, pwd->value);
-*/
