@@ -260,8 +260,9 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 		fprintf(stderr, "assignIORedirects: missing args\n");
 		return (1);
 	}
+/*
 	printf("\tassignIORedirects: before: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
-
+*/
 
 	if (cmd->next && cmd->next->seq_op == ST_PIPE)
 		pipeSegment(cmd, state);
@@ -280,7 +281,9 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 */
 			if (cmd->output_fd != -1)
 			{
+/*
 				printf("resetting cmd->output_fd: closing fd %i\n", cmd->output_fd);
+*/
 				close(cmd->output_fd);
 			}
 
@@ -298,14 +301,18 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 					     open_flags, 0664)) != -1)
 			{
 				cmd->output_fd = out_file;
+/*
 				printf("\tsetting cmd->output_fd to %i\n", cmd->output_fd);
+*/
 			}
 			else
 			{
 /* need to close input if set */
 				if (cmd->input_fd != -1)
 				{
+/*
 					printf("resetting cmd->input_fd: closing fd %i\n", cmd->input_fd);
+*/
 					close(cmd->input_fd);
 				}
 				cantOpenFileErr(st_temp->token, state);
@@ -323,20 +330,23 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 */
 			if (cmd->input_fd != -1)
 			{
+/*
 				printf("resetting cmd->input_fd: closing fd %i\n", cmd->input_fd);
+*/
 				close(cmd->input_fd);
 			}
 
 
-			if ((in_file = open(st_temp->token,
-					    O_RDONLY)) != -1)
+			if ((in_file = open(st_temp->token, O_RDONLY)) != -1)
 				cmd->input_fd = in_file;
 			else
 			{
 /* need to close output if set */
 				if (cmd->output_fd != -1)
 				{
+/*
 					printf("resetting cmd->output_fd: closing fd %i\n", cmd->output_fd);
+*/
 					close(cmd->output_fd);
 				}
 
@@ -349,8 +359,9 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 
 		st_temp = st_temp->next;
 	}
-
+/*
 	printf("\tassignIORedirects: after: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
+*/
 /*
 	printf("\tassignIORedirects: state->child_stdin_bup:%i state->child_stdout_bup:%i\n", state->child_stdin_bup, state->child_stdout_bup);
 */
@@ -370,9 +381,9 @@ void pipeSegment(cmd_list *cmd, sh_state *state)
 		fprintf(stderr, "pipeSegment: missing args\n");
 		return;
 	}
-
+/*
 	printf("\tpipeSegment: top: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
-
+*/
 	/* e.g. sh: ls | cat << DELIM - cat will use the heredoc for stdin */
 	/* so only set the fds if not already set (if -1) */
 	if (cmd->output_fd != -1 ||
@@ -388,8 +399,9 @@ void pipeSegment(cmd_list *cmd, sh_state *state)
 	}
 	else
 		perror("pipeSegment: pipe error");
-
+/*
 	printf("\tpipe set: read:%i write:%i\n", pipe_fds[READ], pipe_fds[WRITE]);
+*/
 }
 
 
@@ -411,7 +423,9 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 
 	if (cmd->input_fd != -1)
 	{
+/*
 		printf("resetting cmd->input_fd: closing fd %i\n", cmd->input_fd);
+*/
 		close(cmd->input_fd);
 	}
 

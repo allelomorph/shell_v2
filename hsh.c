@@ -27,14 +27,18 @@ void shellLoop(sh_state *state)
 	char *line = NULL;
 	st_list *s_tokens = NULL;
 	cmd_list *commands = NULL;
+	bool init_EOF;
 
 	state->loop_count = 1;
 	do {
-		/*
-		setScriptFds(state);
+		if (!line)
+			setScriptFds(state);
+		init_EOF = false;
+/*
 		printf("\tshellLoop: setScriptFds done\n");
 		*/
-		line = _readline(true, state);
+		if ((line = _readline(true, state)) == NULL)
+			init_EOF = unsetScriptFds(state);
 
 		/* screen for ";;" error on raw line to mimic sh */
 		if (dblSemicolonErr(line, state) == 0 &&
@@ -60,7 +64,7 @@ void shellLoop(sh_state *state)
 		if (line)
 			free(line);
 		/* freed pointers will not automatically == NULL */
-	} while (line);
+	} while (line || init_EOF);
 /*
 	printf("\tshellLoop: out of loop\n");
 */
@@ -166,16 +170,13 @@ int main(int argc, char **argv, char **env)
 	if (initShellState(&state, argv[0], env) != 0)
 		return (-1);
 
-	(void)argc;
-	/*
 	checkInitScript(&state);
+/*
 	printf("   main: checkInitScript done\n");
 	*/
 /* !!! should open errors print shell loop 0 here, or loop count after executing ~/.hshrc ? */
-	/*
-	if (argc > 1) * sh simply ignores args after first *
+	if (argc > 1) /* sh simply ignores args after first */
 		checkArgScript(argv[1], &state);
-	*/
 /*
 	printf("   main: checkArgScript done\n");
 */

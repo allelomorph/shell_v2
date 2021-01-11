@@ -51,12 +51,11 @@ void checkInitScript(sh_state *state)
 	sprintf(init_path, "%s/%s", home->value, init_name);
 	init_path[(home_len + init_len + 1)] = '\0';
 
-	/* open file, store fd in state */
-	new_fd = open(init_path, O_RDONLY);
-	if (new_fd == -1)
-		cantOpenScriptErr(init_path, state);
-	else
+	/* open file, store fd in state - no error if missing */
+	if ((new_fd = open(init_path, O_RDONLY)) != -1)
 		state->init_fd = new_fd;
+	else if (errno != ENOENT)
+		cantOpenScriptErr(init_path, state);
 
 	free(init_path);
 }
@@ -91,7 +90,6 @@ void checkArgScript(char *file_path, sh_state *state)
 void setScriptFds(sh_state *state)
 {
 	/* each fd is reset to -1 by unsetScriptFds after _readline == NULL */
-
 	if (state->init_fd != -1) /* init script is open, executed first */
 	{
 /*
@@ -100,6 +98,9 @@ void setScriptFds(sh_state *state)
 		/* backup of inherited std fd */
 		if ((state->stdinfd_bup = dup(STDIN_FILENO)) == -1)
 			perror("setScriptFds: dup error");
+		/* close existing tty stdin */
+		if (close(STDIN_FILENO) == -1)
+			perror("setScriptFds: close error");
 		/* map file fd onto std fd */
 		if (dup2(state->init_fd, STDIN_FILENO) == -1)
 			perror("setScriptFds: dup2 error");
@@ -107,7 +108,7 @@ void setScriptFds(sh_state *state)
 		if (close(state->init_fd) == -1)
 			perror("setScriptFds: close error");
 /*
-		printf("\t\tsetScriptFds2: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
+		printf("\t\tsetScriptFds set init: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
 		return;
 	}
@@ -117,9 +118,15 @@ void setScriptFds(sh_state *state)
 /*
 		printf("\t\tsetScriptFds3: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
-		/* backup of inherited std fd */
-		if ((state->stdinfd_bup = dup(STDIN_FILENO)) == -1)
-			perror("setScriptFds: dup error");
+		if (state->stdinfd_bup == -1)
+		{
+			/* backup of inherited std fd */
+			if ((state->stdinfd_bup = dup(STDIN_FILENO)) == -1)
+				perror("setScriptFds: dup error");
+		}
+		/* close existing stdin (init script or tty) */
+		if (close(STDIN_FILENO) == -1)
+			perror("setScriptFds: close error");
 		/* map file fd onto std fd */
 		if (dup2(state->arg_fd, STDIN_FILENO) == -1)
 			perror("setScriptFds: dup2 error");
@@ -127,7 +134,7 @@ void setScriptFds(sh_state *state)
 		if (close(state->arg_fd) == -1)
 			perror("setScriptFds: close error");
 /*
-		printf("\t\tsetScriptFds4: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
+		printf("\t\tsetScriptFds set arg: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
 	}
 }
@@ -136,38 +143,31 @@ void setScriptFds(sh_state *state)
 /* unsetScriptFds: std: dup2 perror close */
 /* unsetScriptFds: sub: (none) */
 /* !!! can the dup2/close cycle become a subroutine? */
-int unsetScriptFds(sh_state *state)
+bool unsetScriptFds(sh_state *state)
 {
-	int new_stdin;
-
 	if (state->init_fd != -1) /* init script is still open on stdin */
 	{
 /*
 		printf("\t\tunsetScriptFds1: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
-		if (state->arg_fd != -1) /* arg script open, ready for stdin */
-			new_stdin = state->arg_fd;
-		else /* return to original stdin /dev/pts/0 for user input */
-		{
-/*
-			printf("\t\tunsetScriptFds2: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
-*/
-			new_stdin = state->stdinfd_bup;
-			state->stdinfd_bup = -1; /* reset to init value */
-		}
 /*
 		printf("\t\tunsetScriptFds3: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
-		if (dup2(new_stdin, STDIN_FILENO) == -1)
+		if (dup2(state->stdinfd_bup, STDIN_FILENO) == -1)
 			perror("unsetScriptFds: dup2 error");
-		if (close(new_stdin) == -1)
-			perror("unsetScriptFds: close error");
+		if (state->arg_fd == -1)
+		{
+			if (close(state->stdinfd_bup) == -1)
+			{
+				perror("unsetScriptFds: close error");
+				state->stdinfd_bup = -1;
+			}
+		}
 
 		state->init_fd = -1; /* reset to init value */
 /*
-		printf("\t\tunsetScriptFds4: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
+		printf("\t\tunsetScriptFds unset init: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
-
 		/* .hshrc EOF, signal shellLoop to continue w/ new stdin */
 		return (true);
 	}
@@ -187,7 +187,7 @@ int unsetScriptFds(sh_state *state)
 		state->stdinfd_bup = -1; /* reset to init value */
 	}
 /*
-	printf("\t\tunsetScriptFds6: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
+	printf("\t\tunsetScriptFds unset arg: arg_fd: %i init_fd: %i stdinfd_bup: %i\n", state->arg_fd, state->init_fd, state->stdinfd_bup);
 */
 	return (false); /* signals shellLoop to stop */
 }
