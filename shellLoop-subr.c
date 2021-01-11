@@ -169,7 +169,7 @@ int validateSyntax(st_list *head, sh_state *state)
 			{ /* sh: newline after redir advances loop count */
 				if ((temp->p_op >= ST_APPEND &&
 				     temp->p_op <= ST_RD_IN))
-					state->loop_count++;
+				        state->loop_count++;
 				bad_op = "newline";
 			}
 			else if ((temp->p_op >= ST_APPEND &&
