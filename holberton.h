@@ -124,11 +124,13 @@ char *PS2_readline(bool PS1, sh_state *state);
 void restoreStdFDs(sh_state *state);
 void setInputFD(cmd_list *cmd, sh_state *state);
 void setOutputFD(cmd_list *cmd, sh_state *state);
-void assignIORedirects(cmd_list *cmd, sh_state *state);
+int assignIORedirects(cmd_list *cmd, sh_state *state);
 
 void pipeSegment(cmd_list *cmd, sh_state *state);
 void setHeredoc(cmd_list *cmd, char *delim, sh_state *state);
 char *addtnlUsrInput(char *delim, sh_state *state);
+
+char *emptyCharBuff(unsigned int size);
 
 
 /* kv_lists.c */

@@ -36,8 +36,13 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 	if (_strcmp(head->s_tokens->token, "") == 0)
 		return; /* no delimiters, only whitespace in line */
 	temp = head;
+
 	while (temp)
 	{
+/*
+		printf("\texecuteCommands: handling cmd @ %p:\n", (void *)temp);
+		testPrSTList(temp->s_tokens);
+*/
 		/* check if need to skip current command */
 		if ((temp->seq_op == ST_ONSCCS && state->exit_code != 0) ||
 		    (temp->seq_op == ST_ONFAIL && state->exit_code == 0))
@@ -46,23 +51,17 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 				temp = temp->next;
 			continue;
 		}
-		assignIORedirects(temp, state);
-		setInputFD(temp, state);
-		setOutputFD(temp, state);
-		if (checkBuiltins(temp->s_tokens, head, line, state))
+		if (assignIORedirects(temp, state) == 0 &&
+		    !(checkBuiltins(temp->s_tokens, head, line, state)) &&
+		    (cmd_path = _which(temp->s_tokens->token, state)) != NULL)
 		{
-			restoreStdFDs(state);
-			temp = temp->next;
-			continue;
+			forkProcess(temp, head, cmd_path, line, state);
 		}
-		if ((cmd_path = _which(temp->s_tokens->token, state)) == NULL)
-		{
-			cmdNotFoundErr(temp->s_tokens->token, state);
+	        else
 			restoreStdFDs(state);
-			temp = temp->next;
-			continue;
-		}
-		forkProcess(temp, head, cmd_path, line, state);
+/*
+		printf("\texecuteCommands7\n");
+*/
 		temp = temp->next;
 	}
 }
@@ -276,7 +275,8 @@ void setOutputFD(cmd_list *cmd, sh_state *state)
 }
 
 
-void assignIORedirects(cmd_list *cmd, sh_state *state)
+/* subroutines for out and in? */
+int assignIORedirects(cmd_list *cmd, sh_state *state)
 {
 	st_list *st_temp = NULL;
 	int in_file, out_file, open_flags;
@@ -284,40 +284,106 @@ void assignIORedirects(cmd_list *cmd, sh_state *state)
 	if (!cmd || !state)
 	{
 		fprintf(stderr, "assignIORedirects: missing args\n");
-		return;
+		return (1);
 	}
+	printf("\tassignIORedirects: before: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
+
+
+	if (cmd->next && cmd->next->seq_op == ST_PIPE)
+		pipeSegment(cmd, state);
 
 	st_temp = cmd->s_tokens;
 	while (st_temp)
 	{
 		if (st_temp->p_op == ST_RD_OUT || st_temp->p_op == ST_APPEND)
 		{
+			/* edge case: multiple redirects in the same st list */
+			/* close last one set if so */
+/*
+			if (cmd->output_fd != -1 &&
+			    close(cmd->output_fd) == -1)
+				perror("assignIORedirects: close error");
+*/
+			if (cmd->output_fd != -1)
+			{
+				printf("resetting cmd->output_fd: closing fd %i\n", cmd->output_fd);
+				close(cmd->output_fd);
+			}
+
+			/* > completely overwrites file */
+			if (st_temp->p_op == ST_RD_OUT &&
+			    (unlink(st_temp->token) == -1) &&
+			    errno != ENOENT)
+				perror("assignIORedirects: unlink error");
+
 		        open_flags = O_WRONLY | O_CREAT;
 			if (st_temp->p_op == ST_APPEND)
 			        open_flags |= O_APPEND;
 			/* 0664 is -rw-rw-r-- per bash default */
 			if ((out_file = open(st_temp->token,
 					     open_flags, 0664)) != -1)
+			{
 				cmd->output_fd = out_file;
+				printf("\tsetting cmd->output_fd to %i\n", cmd->output_fd);
+			}
 			else
+			{
+/* need to close input if set */
+				if (cmd->input_fd != -1)
+				{
+					printf("resetting cmd->input_fd: closing fd %i\n", cmd->input_fd);
+					close(cmd->input_fd);
+				}
 				cantOpenFileErr(st_temp->token, state);
+				return (1);
+			}
 		}
 		else if (st_temp->p_op == ST_RD_IN)
 		{
+			/* edge case: multiple redirects in the same st list */
+			/* close last one set if so */
+/*
+			if (cmd->input_fd != -1 &&
+			    close(cmd->input_fd) == -1)
+				perror("assignIORedirects: close error");
+*/
+			if (cmd->input_fd != -1)
+			{
+				printf("resetting cmd->input_fd: closing fd %i\n", cmd->input_fd);
+				close(cmd->input_fd);
+			}
+
+
 			if ((in_file = open(st_temp->token,
 					    O_RDONLY)) != -1)
 				cmd->input_fd = in_file;
 			else
+			{
+/* need to close output if set */
+				if (cmd->output_fd != -1)
+				{
+					printf("resetting cmd->output_fd: closing fd %i\n", cmd->output_fd);
+					close(cmd->output_fd);
+				}
+
 				cantOpenFileErr(st_temp->token, state);
+				return (1);
+			}
 		}
 		else if (st_temp->p_op == ST_HEREDOC)
 			setHeredoc(cmd, st_temp->token, state);
 
-		if (cmd->next && cmd->next->seq_op == ST_PIPE)
-			pipeSegment(cmd, state);
-
 		st_temp = st_temp->next;
 	}
+
+	printf("\tassignIORedirects: after: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
+/*
+	printf("\tassignIORedirects: state->child_stdin_bup:%i state->child_stdout_bup:%i\n", state->child_stdin_bup, state->child_stdout_bup);
+*/
+
+	setInputFD(cmd, state);
+	setOutputFD(cmd, state);
+	return (0);
 }
 
 
@@ -330,6 +396,8 @@ void pipeSegment(cmd_list *cmd, sh_state *state)
 		fprintf(stderr, "pipeSegment: missing args\n");
 		return;
 	}
+
+	printf("\tpipeSegment: top: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
 
 	/* e.g. sh: ls | cat << DELIM - cat will use the heredoc for stdin */
 	/* so only set the fds if not already set (if -1) */
@@ -346,6 +414,8 @@ void pipeSegment(cmd_list *cmd, sh_state *state)
 	}
 	else
 		perror("pipeSegment: pipe error");
+
+	printf("\tpipe set: read:%i write:%i\n", pipe_fds[READ], pipe_fds[WRITE]);
 }
 
 
@@ -353,6 +423,20 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 {
 	int pipe_fds[2];
 	char *heredoc = NULL;
+
+	/* edge case: multiple redirects in the same st list */
+	/* close last one set if so */
+/*
+  if (cmd->input_fd != -1 &&
+  close(cmd->input_fd) == -1)
+  perror("assignIORedirects: close error");
+*/
+
+	if (cmd->input_fd != -1)
+	{
+		printf("resetting cmd->input_fd: closing fd %i\n", cmd->input_fd);
+		close(cmd->input_fd);
+	}
 
 	if (pipe(pipe_fds) != -1)
 	{
@@ -378,16 +462,13 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 char *addtnlUsrInput(char *delim, sh_state *state)
 {
 	char *buff = NULL, *line = NULL, *resized_buf = NULL;
-	unsigned int buf_size = 1000, buf_units = 0, line_len = 0, buf_len = 0;
+	unsigned int buf_size = 500, buf_units = 0, line_len = 0, buf_len = 0;
 
 	if (!delim || !state)
 		return (NULL);
-	buff = malloc(sizeof(char) * buf_size);
-	if (!buff)
-	{
-		fprintf(stderr, "addtnlUsrInput: malloc failure\n");
+	if ((buff = emptyCharBuff(buf_size)) == NULL)
 		return (NULL);
-	}
+
 	buf_units++;
         while ((line = PS2_readline(false, state)) != NULL)
 	{
@@ -400,12 +481,9 @@ char *addtnlUsrInput(char *delim, sh_state *state)
 		if ((buf_len / buf_size < (buf_len + line_len) / buf_size))
 		{
 			buf_units++;
-			resized_buf = malloc(sizeof(char) *
-					     (buf_size * buf_units));
+			resized_buf = emptyCharBuff(buf_size * buf_units);
 			if (!resized_buf)
 			{
-				fprintf(stderr,
-					"addtnlUsrInput: malloc failure\n");
 				free(buff);
 				return (NULL);
 			}
@@ -419,6 +497,26 @@ char *addtnlUsrInput(char *delim, sh_state *state)
 	}
 	return (buff);
 }
+
+char *emptyCharBuff(unsigned int size)
+{
+	char *buff = NULL;
+	unsigned int i;
+
+	buff = malloc(sizeof(char) * size);
+	if (!buff)
+	{
+		fprintf(stderr, "emptyCharBuff: malloc failure\n");
+		return (NULL);
+	}
+
+	for (i = 0; i < size; i++)
+		buff[i] = '\0';
+
+	return (buff);
+}
+
+
 
 /*
 ST_RD_OUT (redirect stdout)

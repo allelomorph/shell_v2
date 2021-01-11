@@ -126,16 +126,22 @@ void cantOpenFileErr(char *filename, sh_state *state)
 		script_n = (state->init_fd != -1) ?
 			"~/.hshrc" : state->scrp_name;
 
-		fprintf(stderr, "%s: %u: %s: cannot open %s",
+		fprintf(stderr, "%s: %u: %s: cannot open %s: ",
 			script_n, state->loop_count,
 			script_n, filename);
-		perror("");
+		if (errno == ENOENT) /* sh does not print "or directory" */
+			fprintf(stderr, "No such file\n");
+		else
+			perror("");
 	}
 	else
 	{
-		fprintf(stderr, "%s: %u: cannot open %s",
+		fprintf(stderr, "%s: %u: cannot open %s: ",
 			state->exec_name, state->loop_count, filename);
-		perror("");
+		if (errno == ENOENT) /* sh does not print "or directory" */
+			fprintf(stderr, "No such file\n");
+		else
+			perror("");
 	}
 
 	state->exit_code = 2; /* 2: sh code for sh internal failures */

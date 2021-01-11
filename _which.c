@@ -136,7 +136,8 @@ char *_which(char *exec, sh_state *state)
 			return (abs_path);
 		}
 	}
-        /* no valid path found, return default NULL */
 	free(PATH_cpy);
-	return(abs_path);
+        /* no valid path found, return default NULL */
+	cmdNotFoundErr(exec, state);
+	return (abs_path);
 }
