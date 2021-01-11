@@ -155,32 +155,35 @@ int validateSyntax(st_list *head, sh_state *state)
 		fprintf(stderr, "validateSyntax: missing arguments\n");
 		return (1);
 	}
-
 	temp = head;
 	while (temp && !bad_op)
 	{
-	        if ((temp->token)[0] == '\0' && temp->next &&
-			 (temp->next->p_op >= ST_CMD_BRK &&
-			  temp->next->p_op <= ST_PIPE))
-			bad_op = err_ops[temp->next->p_op];
-		else if ((temp->token)[0] == '\0' &&
-			 (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE) &&
-			 !(temp->next))
-			bad_op = "newline";
-		else if ((temp->token)[0] == '\0' &&
-			 (temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN) &&
-			 temp->next &&
-			 (temp->next->p_op >= ST_APPEND &&
-			  temp->next->p_op <= ST_RD_IN))
-			bad_op = "redirection";
+	        if ((temp->token)[0] == '\0')
+		{
+			if (temp->next &&
+			    (temp->next->p_op >= ST_CMD_BRK &&
+			     temp->next->p_op <= ST_PIPE))
+				bad_op = err_ops[temp->next->p_op];
+			else if ((temp->p_op >= ST_ONSCCS &&
+				  temp->p_op <= ST_RD_IN) && !(temp->next))
+			{ /* sh: newline after redir advances loop count */
+				if ((temp->p_op >= ST_APPEND &&
+				     temp->p_op <= ST_RD_IN))
+					state->loop_count++;
+				bad_op = "newline";
+			}
+			else if ((temp->p_op >= ST_APPEND &&
+				  temp->p_op <= ST_RD_IN) && temp->next &&
+				 (temp->next->p_op >= ST_APPEND &&
+				  temp->next->p_op <= ST_RD_IN))
+				bad_op = "redirection";
+		}
 		temp = temp->next;
 	}
-
 	if (bad_op)
 	{
 		syntaxErr(bad_op, state);
 		return (1);
 	}
-
 	return (0);
 }

@@ -67,25 +67,6 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 }
 
 
-/* neline unexpected after redir ops happen here instead of with normal validation */
-#ifdef ZZZ
-int checkMissingRedirects()
-{
-
-	if ((cmd->s_tokens->token)[0] == '\0' &&
-	    (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE) &&
-			 !(temp->next))
-			bad_op = "newline";
-		temp = temp->next;
-	}
-
-	if (bad_op)
-	{
-		syntaxErr(bad_op, state);
-		return (1);
-
-}
-#endif
 
 void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state)
 {
@@ -270,23 +251,21 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 	st_temp = cmd->s_tokens;
 	while (st_temp)
 	{
+
 		if (st_temp->p_op == ST_RD_OUT || st_temp->p_op == ST_APPEND)
 		{
 			/* edge case: multiple redirects in the same st list */
 			/* close last one set if so */
-/*
 			if (cmd->output_fd != -1 &&
 			    close(cmd->output_fd) == -1)
 				perror("assignIORedirects: close error");
-*/
+/*
 			if (cmd->output_fd != -1)
 			{
-/*
 				printf("resetting cmd->output_fd: closing fd %i\n", cmd->output_fd);
-*/
 				close(cmd->output_fd);
 			}
-
+*/
 			/* > completely overwrites file */
 			if (st_temp->p_op == ST_RD_OUT &&
 			    (unlink(st_temp->token) == -1) &&
