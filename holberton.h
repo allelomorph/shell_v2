@@ -113,13 +113,12 @@ void syntaxErr(char *bad_op, sh_state *state);
 int dblSemicolonErr(char *line, sh_state *state);
 void cantOpenScriptErr(char *filename, sh_state *state);
 void cantOpenFileErr(char *filename, sh_state *state);
+void cantCdToErr(char *dirname, sh_state *state);
 
 
 /* execution.c */
 void executeCommands(cmd_list *head, char *line, sh_state *state);
 void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state);
-
-char *PS2_readline(bool PS1, sh_state *state);
 
 void restoreStdFDs(sh_state *state);
 void setInputFD(cmd_list *cmd, sh_state *state);
@@ -128,7 +127,7 @@ int assignIORedirects(cmd_list *cmd, sh_state *state);
 
 void pipeSegment(cmd_list *cmd, sh_state *state);
 void setHeredoc(cmd_list *cmd, char *delim, sh_state *state);
-char *addtnlUsrInput(char *delim, sh_state *state);
+char *getHeredoc(char *delim, sh_state *state);
 
 char *emptyCharBuff(unsigned int size);
 
@@ -176,8 +175,7 @@ int unsetScriptFds(sh_state *state);
 
 
 /* shellLoop-subr.c */
-char *_readline(sh_state *state);
-void runCommand(char **args, char *line, sh_state *state);
+char *_readline(bool PS1, sh_state *state);
 bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *state);
 int validateSyntax(st_list *head, sh_state *state);
 

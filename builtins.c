@@ -192,6 +192,7 @@ kv_list *checkPWD(sh_state *state)
 }
 
 
+/* !!! ~ should be treated as a variable expansion in lexer, not specially here */
 /* changeDir: std: chdir fprintf */
 /* changeDir: sub: _setenv */
 /* helper to _cd */
@@ -209,19 +210,21 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 			/* avoids setting PWD to a OLDPWD freed by _setenv */
 			dest = _strdup(dest);
 		}
-
+/* _setenv dups its value arg */
 		_setenv("OLDPWD", pwd->value, state);
 		_setenv("PWD", dest, state);
 
-		if (_strcmp(cd_arg, "-") == 0)
+		/* two cases copy is made in addition to one from _setenv */
+		if (_strcmp(cd_arg, "-") == 0 || cd_arg[0] == '~')
 			free(dest);
 
 		return (0);
 	}
 
-	fprintf(stderr, "%s: %u: cd: can't cd to %s\n",
-		state->exec_name, state->loop_count, dest);
+	if (cd_arg[0] == '~')
+		free(dest);
 
+	cantCdToErr(cd_arg, state);
 	return (2);
 }
 
@@ -233,6 +236,7 @@ int _cd(char *dir_name, sh_state *state)
 {
 	kv_list *home = NULL, *pwd = NULL, *oldpwd = NULL;
 	char *dest = NULL;
+	int dest_len = 0;
 
 	home = getKVPair(state->env_vars, "HOME");
 	oldpwd = getKVPair(state->env_vars, "OLDPWD");
@@ -252,6 +256,18 @@ int _cd(char *dir_name, sh_state *state)
 			dest = oldpwd->value;
 		else
 			return (_setenv("OLDPWD", pwd->value, state));
+	}
+	else if (dir_name[0] == '~' && home && home->value)
+	{
+		dest_len = (_strlen(dir_name + 1) + _strlen(home->value));
+		dest = malloc(sizeof(char) * (dest_len + 1));
+		if (!dest)
+		{
+			fprintf(stderr, "_cd: malloc failure\n");
+			return (1);
+		}
+		sprintf(dest, "%s%s", home->value, dir_name + 1);
+		dest[dest_len] = '\0';
 	}
 	else /* arg present and not '-' */
 		dest = dir_name;

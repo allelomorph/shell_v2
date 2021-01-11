@@ -146,3 +146,32 @@ void cantOpenFileErr(char *filename, sh_state *state)
 
 	state->exit_code = 2; /* 2: sh code for sh internal failures */
 }
+
+
+void cantCdToErr(char *dirname, sh_state *state)
+{
+	char *script_n = NULL;
+
+	if (!dirname || !state)
+	{
+		fprintf(stderr, "cantCdToErr: missing arguments\n");
+		return;
+	}
+
+	if (state->stdinfd_bup != -1) /* either init or arg script is open */
+	{
+		script_n = (state->init_fd != -1) ?
+			"~/.hshrc" : state->scrp_name;
+
+		fprintf(stderr, "%s: %u: cd: can't cd to %s\n",
+		        script_n, state->loop_count, dirname);
+	}
+	else
+	{
+		fprintf(stderr, "%s: %u: cd: can't cd to %s\n",
+			state->exec_name, state->loop_count, dirname);
+	}
+
+	/* state->exit_code not set here as it will be set by return values: */
+	/* changeDir to _cd to checkBuiltins */
+}

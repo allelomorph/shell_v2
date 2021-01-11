@@ -67,6 +67,26 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 }
 
 
+/* neline unexpected after redir ops happen here instead of with normal validation */
+#ifdef ZZZ
+int checkMissingRedirects()
+{
+
+	if ((cmd->s_tokens->token)[0] == '\0' &&
+	    (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE) &&
+			 !(temp->next))
+			bad_op = "newline";
+		temp = temp->next;
+	}
+
+	if (bad_op)
+	{
+		syntaxErr(bad_op, state);
+		return (1);
+
+}
+#endif
+
 void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state)
 {
 	char **args = NULL, **env = NULL;
@@ -109,53 +129,6 @@ void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, 
 		free(cmd_path);
 		break;
 	}
-}
-
-
-char *PS2_readline(bool PS1, sh_state *state)
-{
-	char *input = NULL;
-	size_t buf_bytes = 0; /* must be intialized or segfault on getline */
-	bool tty;
-	ssize_t read_bytes = 0;
-
-	tty = isatty(STDIN_FILENO);
-	if (tty)
-	{
-		if (PS1) /* eventually shell var PS1 */
-			printf("Cascara $ ");
-		else
-			printf("> "); /* PS2 */
-	        fflush(stdout);
-	}
-	else if (errno != ENOTTY)
-	{
-		perror("_readline: isatty error");
-		state->exit_code = -1;
-		return (NULL);
-	}
-	if ((read_bytes = getline(&input, &buf_bytes, stdin)) == -1)
-	{ /* getline failure or EOF reached / ctrl+d entered by user */
-		if (input)
-			free(input);
-
-		if (errno == EINVAL)
-		{
-			perror("_readline: getline error");
-			state->exit_code = -1;
-			return (NULL);
-		}
-
-		if (tty) /* no errors, ctrl+d state */
-		        printf("\n"); /* final \n to exit prompt */
-
-		return (NULL); /* signal end of loop to shellLoop */
-	}
-	/* keep newlines for heredocs, remove for main prompt (PS1) */
-	if (PS1)
-		input[read_bytes - 1] = '\0';
-
-	return (input);
 }
 
 
@@ -273,6 +246,7 @@ void setOutputFD(cmd_list *cmd, sh_state *state)
 		}
 	}
 }
+
 
 
 /* subroutines for out and in? */
@@ -424,6 +398,9 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 	int pipe_fds[2];
 	char *heredoc = NULL;
 
+	if (!cmd || !delim || !state)
+		return;
+
 	/* edge case: multiple redirects in the same st list */
 	/* close last one set if so */
 /*
@@ -440,7 +417,8 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 
 	if (pipe(pipe_fds) != -1)
 	{
-		heredoc = addtnlUsrInput(delim, state);
+/* !! getHerdoc instead ? */
+		heredoc = getHeredoc(delim, state);
 		if (heredoc)
 		{
 			write(pipe_fds[WRITE], heredoc, _strlen(heredoc));
@@ -459,18 +437,19 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 
 
 /* goes through secondary input loop to store multiline input */
-char *addtnlUsrInput(char *delim, sh_state *state)
+char *getHeredoc(char *delim, sh_state *state)
 {
 	char *buff = NULL, *line = NULL, *resized_buf = NULL;
 	unsigned int buf_size = 500, buf_units = 0, line_len = 0, buf_len = 0;
 
 	if (!delim || !state)
 		return (NULL);
+
 	if ((buff = emptyCharBuff(buf_size)) == NULL)
 		return (NULL);
 
 	buf_units++;
-        while ((line = PS2_readline(false, state)) != NULL)
+        while ((line = _readline(false, state)) != NULL)
 	{
 		line_len = _strlen(line);
 		if (_strncmp(line, delim, line_len - 1) == 0)

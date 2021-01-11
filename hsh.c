@@ -34,7 +34,7 @@ void shellLoop(sh_state *state)
 		setScriptFds(state);
 		printf("\tshellLoop: setScriptFds done\n");
 		*/
-		line = _readline(state);
+		line = _readline(true, state);
 
 		/* screen for ";;" error on raw line to mimic sh */
 		if (dblSemicolonErr(line, state) == 0 &&

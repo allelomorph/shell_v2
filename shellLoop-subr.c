@@ -26,11 +26,7 @@
 
 /* _readline: std: isatty printf perror getline free */
 /* _readline: sub: (none) */
-/**
- * _readline - takes user input from sdtin stream and converts to a string
- * Return: char pointer to string containing user input, or NULL on failure or EOF state(?)
- */
-char *_readline(sh_state *state)
+char *_readline(bool PS1, sh_state *state)
 {
 	char *input = NULL;
 	ssize_t read_bytes = 0;
@@ -39,10 +35,12 @@ char *_readline(sh_state *state)
 
 	tty = isatty(STDIN_FILENO);
 	if (tty)
-/* !!! eventually shell var PS1 */
 	{
-		printf("Cascara $ ");
-		fflush(stdout);
+		if (PS1) /* eventually shell var PS1 */
+			printf("Cascara $ ");
+		else
+			printf("> "); /* PS2 */
+	        fflush(stdout);
 	}
 	else if (errno != ENOTTY)
 	{
@@ -65,80 +63,16 @@ char *_readline(sh_state *state)
 		if (tty) /* no errors, ctrl+d state */
 		        printf("\n"); /* final \n to exit prompt */
 
-		return (NULL); /* signald end of loop to shellLoop */
+		return (NULL); /* signal end of loop */
 	}
-	input[read_bytes - 1] = '\0'; /* remove newline char from input */
+	/* keep newlines for heredocs, remove for main prompt (PS1) */
+	if (PS1)
+		input[read_bytes - 1] = '\0';
+
 	return (input);
 }
 
 
-/* runCommand: std: fprintf fork perror execve free wait */
-/* runCommand: sub: _which cmdNotFoundErr StrArrFromKVList strArrFree freeShellState */
-/**
- * runCommand - forks into child process to execute command in user input
- * with given args and environment
- */
-/* freeing of line mainly happens in shellLoop, included in child_exec to be freed in failed children */
-void runCommand(char **args, char *line, sh_state *state)
-{
-	int status = 0;
-	char *cmd_path = NULL;
-	char **env = NULL;
-/*
-	printf("\t\trunCommand1: args @ %p args[0]: %s line:%s state @ %p\n", (void *)args, args[0], line, (void *)state);
-*/
-	if (!args || !line || !state)
-	{
-		fprintf(stderr, "runCommand: missing args\n");
-		return;
-	}
-/* path check with _which could happen in shellLoop to free up space here */
-	if ((cmd_path = _which(args[0], state)) == NULL)
-	{
-		cmdNotFoundErr(args[0], state);
-		return;
-	}
-/*
-	printf("\t\trunCommand1: cmd_path: %s\n", cmd_path);
-*/
-	switch(fork())
-	{
-	case -1: /* fork failure */
-		perror("runCommand: fork error");
-		break;
-        case 0: /* in child */
-	        if ((env = StrArrFromKVList(state->env_vars)) == NULL)
-			fprintf(stderr, "runCommand: no env detected\n");
-		if (execve(cmd_path, args, env) == -1)
-		{
-			perror("runCommand: execve error");
-			/* free from this func */
-			free(cmd_path);
-			strArrFree(env);
-/* !!! free other shell memory here instead of shellLoop, for now - pop out freeAllStorage subroutine? */
-			free(args);
-			free(line);
-			freeShellState(state);
-			exit(-1);
-		}
-		break;
-        default: /* in parent */
-		if (wait(&status) == -1) /* wait for any child */
-			perror("runCommand: wait error");
-		else
-		{
-			if (WIFEXITED(status)) /* normal stop: main/exit/_exit */
-				state->exit_code = WEXITSTATUS(status);
-			else
-				state->exit_code = -1;
-		}
-/*
-		printf("\t\trunCommand3: child exit code:%i\n", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
-*/
-		free(cmd_path);
-		break;
-	}
-}
 
 /* forkWaitFailCleanup */
 /* failed child needs to free: cmd_path, env, line, args and state */
