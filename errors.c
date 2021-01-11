@@ -96,11 +96,8 @@ int dblSemicolonErr(char *line, sh_state *state)
 }
 
 
-void cantOpenScriptErr(char *filename, sh_state *state);
 void cantOpenScriptErr(char *filename, sh_state *state)
 {
-	char *script_n = NULL;
-
 	if (!filename || !state)
 	{
 		fprintf(stderr, "cantOpenScriptErr: missing arguments\n");
@@ -114,7 +111,6 @@ void cantOpenScriptErr(char *filename, sh_state *state)
 }
 
 
-void cantOpenFileErr(char *filename, sh_state *state);
 void cantOpenFileErr(char *filename, sh_state *state)
 {
 	char *script_n = NULL;
@@ -132,7 +128,7 @@ void cantOpenFileErr(char *filename, sh_state *state)
 
 		fprintf(stderr, "%s: %u: %s: cannot open %s",
 			script_n, state->loop_count,
-			script_n, bad_op);
+			script_n, filename);
 		perror("");
 	}
 	else

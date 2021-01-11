@@ -68,11 +68,14 @@ typedef struct sh_state_s
 	kv_list *sh_vars;
 	kv_list *aliases;
 */
+/* !!! still unused? */
 	cmd_list *commands;
 /*
 	char **var_copies; * copies of expanded variable values for lexing by whtspc *
 	char **alias_copies; * copies of expanded alias values for full lexing *
 */
+	int child_stdin_bup;
+	int child_stdout_bup;
 	int stdinfd_bup; /* if running script or file arg to main, -1 default */
 	int init_fd; /* ~/.hshrc script */
 	int arg_fd; /* main(argv[1]) script */
@@ -89,7 +92,7 @@ void freeShellState(sh_state *state);
 
 /* builtins.c */
 int _env(sh_state *state);
-void __exit(char *code, char *line, char **tokens, sh_state *state);
+void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state);
 int _setenv(char *var, char *value, sh_state *state);
 int _unsetenv(char *var, sh_state *state);
 /* eventually "_cd.c" */
@@ -108,6 +111,24 @@ void testPrintCmdList(cmd_list *head);
 void cmdNotFoundErr(char *cmd, sh_state *state);
 void syntaxErr(char *bad_op, sh_state *state);
 int dblSemicolonErr(char *line, sh_state *state);
+void cantOpenScriptErr(char *filename, sh_state *state);
+void cantOpenFileErr(char *filename, sh_state *state);
+
+
+/* execution.c */
+void executeCommands(cmd_list *head, char *line, sh_state *state);
+void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state);
+
+char *PS2_readline(bool PS1, sh_state *state);
+
+void restoreStdFDs(sh_state *state);
+void setInputFD(cmd_list *cmd, sh_state *state);
+void setOutputFD(cmd_list *cmd, sh_state *state);
+void assignIORedirects(cmd_list *cmd, sh_state *state);
+
+void pipeSegment(cmd_list *cmd, sh_state *state);
+void setHeredoc(cmd_list *cmd, char *delim, sh_state *state);
+char *addtnlUsrInput(char *delim, sh_state *state);
 
 
 /* kv_lists.c */
@@ -139,7 +160,7 @@ cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state);
 
 /* st_lists.c */
 void freeSTList(st_list **head);
-char **STListToStrArr(st_list *head);
+char **STListToArgArr(st_list *head);
 /* testing */
 void testPrSTList(st_list *head);
 
@@ -155,9 +176,7 @@ int unsetScriptFds(sh_state *state);
 /* shellLoop-subr.c */
 char *_readline(sh_state *state);
 void runCommand(char **args, char *line, sh_state *state);
-bool checkBuiltins(char **tokens, int token_count,
-		   char *line, sh_state *state);
-
+bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *state);
 int validateSyntax(st_list *head, sh_state *state);
 
 

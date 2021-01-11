@@ -66,6 +66,22 @@ st_list *lineLexer(char *line, sh_state *state)
 	return (head);
 }
 
+/*
+	char *p_ops[] = {
+		"ST_NONE",
+		"ST_CMD_BRK",
+		"ST_ONSCCS",
+		"ST_ONFAIL",
+		"ST_PIPE",
+		"ST_APPEND",
+		"ST_RD_OUT",
+		"ST_HEREDOC",
+		"ST_RD_IN",
+		"ST_MACRO_CT"
+	};
+*/
+
+
 #ifdef ZZZ
 /* !!! unfinished draft*/
 
@@ -125,7 +141,6 @@ int varExpansion(st_list *head, sh_state *state)
 
 }
 #endif
-
 
 
 /* trimComments: std: (none) */

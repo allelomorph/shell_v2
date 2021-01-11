@@ -35,49 +35,29 @@ void shellLoop(sh_state *state)
 		printf("\tshellLoop: setScriptFds done\n");
 		*/
 		line = _readline(state);
-/*
-		optional screen for ";;" error on raw line to mimic sh
-*/
 
+		/* screen for ";;" error on raw line to mimic sh */
 		if (dblSemicolonErr(line, state) == 0 &&
-		    (s_tokens = lineLexer(line, state)) != NULL)
+		    (s_tokens = lineLexer(line, state)) != NULL &&
+		    validateSyntax(s_tokens, state) == 0)
 		{
-/*
-			testPrSTList(s_tokens);
-*/
-/* !!! eventually in same test as dblSem and lineLexer */
-			if (validateSyntax(s_tokens, state) == 0)
-			{
-				if (state->loop_count != 1)
-					state->loop_count++; /* only after no syntax error */
-/*
-				else
-					skip parsing and execution;
-*/
-				commands = STListToCmdList(s_tokens, state);
-				printf("shellLoop: commands found:\n");
-				testPrintCmdList(commands);
-			}
+			/* count only increments after no syntax error */
+			if (state->loop_count != 1)
+				state->loop_count++;
 
+			commands = STListToCmdList(s_tokens, state);
+			printf("shellLoop: commands found:\n");
+			testPrintCmdList(commands);
+			executeCommands(commands, line, state);
 		}
-/* !!! should builtin be changed to a return value to checkBuiltins? */
-/* !!! currently __exit doesn't free line or tokens */
-/*
-			if (!(checkBuiltins(tokens, t_count, line, state)))
-*/
-/* currently runCommand will free all memory and exit directly on fork/wait failure */
-/*
-				runCommand(tokens, line, state);
-			free(tokens);
-		}
-*/
+
 /* !!! experiment with freeing line just before _readline */
 		if (commands)
 			freeCmdList(&commands);
 		if (line)
 			free(line);
-
-	} while (line/* || init_script_EOF*/); /* freed pointers will not automatically == NULL */
+		/* freed pointers will not automatically == NULL */
+	} while (line);
 /*
 	printf("\tshellLoop: out of loop\n");
 */
@@ -92,41 +72,6 @@ void shellLoop(sh_state *state)
    4- fatal errors (? most errors just print error and keep looping)
 */
 
-
-#ifdef ZZZZ
-/* IORedirect: open fprintf dup dup2 close */
-/* may be later generalized to be a function for stdin redirects: inputRedirect(char *path, sh_state *state) and restoreStdin(sh_state *state) */
-int IORedirect(char *path, int std_fd, sh_state *state)
-{
-	int new_fd, std_fd_bup = -1;
-
-/* !!! what about heredocs? ps2 read loop would happen inside script if already redirected */
-	if (std_fd == STDIN_FILENO)
-		new_fd = open(file_path, O_RDONLY);
-
-/* !!! what about appending? bool arg? need mode codes for O_CREAT */
-/*
-	if (std_fd == STDOUT_FILENO)
-		new_fd = open(file_path, O_WRONLY | O_CREAT);
-*/
-	if (new_fd != -1) /* open success */
-	{
-		/* backup of inherited std fd */
-		std_fd_bup = dup(std_fd);
-		/* map file fd onto std fd */
-		dup2(new_fd, std_fd);
-		/* cleanup by closing original once copied */
-		close(new_fd);
- 	}
-	else if (std_fd == STDIN_FILENO) /* sh standard error */
-		fprintf(stderr, "%s: %u: Can't open %s\n",
-			state->exec_name, state->loop_count, path);
-	else /* custom debug error */
-		perror("IORedirect: open error");
-
-	return (std_fd_bup);
-}
-#endif
 
 
 /* initShellState: std: (none) */
@@ -154,9 +99,13 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 	state->sh_vars = sh_vars;
 	state->aliases = NULL;
 	*/
+/* !!! still unused? */
 	state->commands = NULL;
 
-	state->stdinfd_bup = -1; /* -1 serves as NULL state for fds here */
+	/* -1 serves as NULL state for fds here */
+	state->child_stdin_bup = -1;
+	state->child_stdout_bup = -1;
+	state->stdinfd_bup = -1;
 	state->init_fd = -1;
 	state->arg_fd = -1;
 

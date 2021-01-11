@@ -162,13 +162,13 @@ void runCommand(char **args, char *line, sh_state *state)
 /* checkBuiltins: sub: _env __exit _setenv _unsetenv _cd */
 /* maybe add return value to indicate builtin found instead of arg builtin */
 /* !!! try to coordinate all builtins error handling and exiting through this function */
-bool checkBuiltins(char **tokens, int token_count,
-		   char *line, sh_state *state)
+bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *state)
 {
 	bool builtin = true;
 	int exit_code = 0;
+	char *arg0 = NULL, *arg1 = NULL, *arg2 = NULL;
 
-	if (!tokens || !line || !state)
+	if (!st_head || !cmd_head || !line || !state)
 	{
 		fprintf(stderr, "checkBuiltins: missing arguments\n");
 		return (false);
@@ -176,21 +176,27 @@ bool checkBuiltins(char **tokens, int token_count,
 /*
 	printf("\t\tcheckBuiltins: builtin:%s args:%s %s\n", tokens[0], tokens[1], token_count >= 2 ? tokens[2] : NULL);
 */
+	arg0 = st_head->token;
+	if (st_head->next)
+	{
+		arg1 = st_head->next->token;
+		if (st_head->next->next)
+			arg2 = st_head->next->next->token;
+	}
+
 	/* env exit setenv unsetenv cd */
 	/* _env __exit _setenv _unsetenv _cd */
 
-	if (_strcmp("cd", tokens[0]) == 0)
-		exit_code = _cd(tokens[1], state);
-	else if (_strcmp("env", tokens[0]) == 0)
+	if (_strcmp("cd", arg0) == 0)
+		exit_code = _cd(arg1, state);
+	else if (_strcmp("env", arg0) == 0)
 		exit_code = _env(state);
-	else if (_strcmp("setenv", tokens[0]) == 0)
-		exit_code = _setenv(tokens[1],
-				    token_count >= 2 ? tokens[2] : NULL,
-				    state);
-	else if (_strcmp("unsetenv", tokens[0]) == 0)
-		exit_code = _unsetenv(tokens[1], state);
-	else if (_strcmp("exit", tokens[0]) == 0)
-		__exit(tokens[1], line, tokens, state);
+	else if (_strcmp("setenv", arg0) == 0)
+		exit_code = _setenv(arg1, arg2, state);
+	else if (_strcmp("unsetenv", arg0) == 0)
+		exit_code = _unsetenv(arg1, state);
+	else if (_strcmp("exit", arg0) == 0)
+		__exit(arg1, line, cmd_head, state);
 	else
 		builtin = false;
 

@@ -79,5 +79,3 @@ cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state)
 	}
 	return (cmd_head);
 }
-
-

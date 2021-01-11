@@ -51,33 +51,42 @@ void testPrSTList(st_list *head)
 }
 
 
-char **STListToStrArr(st_list *head)
+/* !!! modified to ignore redirection tokens instead of excising them earlier */
+char **STListToArgArr(st_list *head)
 {
 	st_list *temp = NULL;
 	int i, list_len = 0;
-	char **str_arr = NULL;
+	char **arg_arr = NULL;
 
 	temp = head;
 	while (temp)
 	{
-		list_len++;
+		/* ignoring redirect tokens */
+		if (!(temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN))
+			list_len++;
 		temp = temp->next;
 	}
 
-	str_arr = malloc(sizeof(char *) * (list_len + 1));
-	if (!str_arr)
+        arg_arr = malloc(sizeof(char *) * (list_len + 1));
+	if (!arg_arr)
 	{
 		fprintf(stderr, "STListToStrArr: malloc failure\n");
 		return (NULL);
 	}
 
+	i = 0;
 	temp = head;
-	for (i = 0; i < list_len; i++)
+	while (temp && i < list_len)
 	{
-		str_arr[i] = temp->token;
+		/* ignoring redirect tokens */
+		if (!(temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN))
+		{
+			arg_arr[i] = temp->token;
+			i++;
+		}
 		temp = temp->next;
 	}
-	str_arr[list_len] = NULL;
+	arg_arr[list_len] = NULL;
 
-	return (str_arr);
+	return (arg_arr);
 }

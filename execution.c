@@ -1,114 +1,126 @@
 #include "holberton.h"
 
-
 /* open */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+/* wait (+sys/types) */
+#include <sys/wait.h>
+
+/* fork execve _exit isatty dup2 pipe write */
+#include <unistd.h>
+
+/* free malloc exit */
+#include <stdlib.h>
+
 
 #define READ    0
 #define WRITE   1
 
+/* in testing, sh builtins are not subject to IO redirection, but a heredoc will still collect */
+/* so we check for builtins here, but need to close all open fds if builtin executed */
+/* must do before _which since env would conflict with /usr/bin/env */
 
-void executeCommands(cmd_list *cmd_head, char *line, sh_state *state);
-void executeCommands(cmd_list *cmd_head, char *line, sh_state *state)
+
+void executeCommands(cmd_list *head, char *line, sh_state *state)
 {
-	cmd_list *cmd_temp = NULL;
+	cmd_list *temp = NULL;
+	char *cmd_path = NULL;
 
-	if (!cmds || !line || !state)
+	if (!head || !line || !state)
 	{
 		fprintf(stderr, "executeCommands: missing args\n");
 		return;
 	}
 
-	cmd_temp = cmd_head;
-	while (cmd_temp)
+	temp = head;
+	while (temp)
 	{
 		/* check if need to skip current commnand */
-		if ((cmd_temp->seq_op == ST_ONSCCS && state->exit_code != 0) ||
-		    (cmd_temp->seq_op == ST_ONFAIL && state->exit_code == 0))
+		if ((temp->seq_op == ST_ONSCCS && state->exit_code != 0) ||
+		    (temp->seq_op == ST_ONFAIL && state->exit_code == 0))
 		{
 			/* skip commands until semicolon or end of list */
-			while (cmd_temp && cmd_temp->seq_op != ST_CMD_BRK)
-				cmd_temp = cmd_temp->next;
+			while (temp && temp->seq_op != ST_CMD_BRK)
+				temp = temp->next;
 			continue;
 		}
 
-		/* handles all caret ops, which take precedence over pipe redirects of IO */
-		assignIORedirects(cmd_temp, state);
+		assignIORedirects(temp, state);
+		setInputFD(temp, state);
+		setOutputFD(temp, state);
 
-		/* in testing, sh builtins are not subject to IO redirection, but a heredoc will still collect */
-		/* so we check for builtins here, but need to close all open fds if builtin executed */
-		/* must do before _which since env would conflict with /usr/bin/env */
-		if (checkBuiltins(cmd_temp, line, state))
+		if (checkBuiltins(temp->s_tokens, head, line, state))
 		{
-			cmd_temp = cmd_temp->next;
-		/* close fds in checkBultins */
+			restoreStdFDs(state);
+			temp = temp->next;
 			continue;
 		}
-
-		/* path check with _which could happen in shellLoop to free up space here */
-/*
-		if ((exec_path = _which(cmd_temp->s_tokens->token, state)) == NULL)
+		if ((cmd_path = _which(temp->s_tokens->token, state)) == NULL)
 		{
-			cmdNotFoundErr(cmd_temp->s_tokens->token, state);
-			return;
+			cmdNotFoundErr(temp->s_tokens->token, state);
+			restoreStdFDs(state);
+			temp = temp->next;
+			continue;
 		}
-*/
-		/* convert cmd syntax tokens to string array for execve */
-		token_arr = STListToStrArr(cmd_temp->s_tokens);
-
-		/* map cmd input and output fds to stdin and stdout if necessary */
-
-
-		switch(fork())
-		{
-		case -1: /* fork failure */
-			perror("runCommand: fork error");
-			break;
-		case 0: /* in child */
-			if ((env = StrArrFromKVList(state->env_vars)) == NULL)
-				fprintf(stderr, "runCommand: no env detected\n");
-			if (execve(cmd_path, args, env) == -1)
-			{
-				perror("runCommand: execve error");
-				/* free from this func */
-				free(cmd_path);
-				strArrFree(env);
-/* !!! free other shell memory here instead of shellLoop, for now - pop out freeAllStorage subroutine? */
-				free(args);
-				free(line);
-				freeShellState(state);
-				exit(-1);
-			}
-			break;
-		default: /* in parent */
-			if (wait(&status) == -1) /* wait for any child */
-				perror("runCommand: wait error");
-			else
-			{
-				if (WIFEXITED(status)) /* normal stop: main/exit/_exit */
-					state->exit_code = WEXITSTATUS(status);
-				else
-					state->exit_code = -1;
-			}
-/*
-  printf("\t\trunCommand3: child exit code:%i\n", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
-*/
-			free(cmd_path);
-			break;
-		}
-		/* set temp = temp->next or skip based on retval of last child */
+		forkProcess(temp, head, cmd_path, line, state);
+		temp = temp->next;
 	}
 }
 
-char *PS2_readline(sh_state *state, bool PS1);
-char *PS2_readline(sh_state *state, bool PS1)
+
+void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state)
+{
+	char **args = NULL, **env = NULL;
+	int status;
+
+	switch(fork())
+	{
+	case -1: /* fork failure */
+		perror("forkProcess: fork error");
+		break;
+	case 0: /* in child */
+		if ((args = STListToArgArr(cmd->s_tokens)) == NULL)
+			fprintf(stderr, "forkProcess: no args detected\n");
+		if ((env = StrArrFromKVList(state->env_vars)) == NULL)
+			fprintf(stderr, "forkProcess: no env detected\n");
+		if (execve(cmd_path, args, env) == -1)
+		{
+			perror("forkProcess: execve error");
+			free(cmd_path);
+			free(args);
+			strArrFree(env);
+			restoreStdFDs(state);
+			freeCmdList(&cmd_head);
+			free(line);
+			freeShellState(state);
+			_exit(-1);
+		}
+		break;
+	default: /* in parent */
+		restoreStdFDs(state);
+		if (wait(&status) == -1) /* wait for any child */
+			perror("forkProcess: wait error");
+		else
+		{
+			if (WIFEXITED(status)) /* normal stop: main/exit/_exit */
+				state->exit_code = WEXITSTATUS(status);
+			else
+				state->exit_code = -1;
+		}
+		free(cmd_path);
+		break;
+	}
+}
+
+
+char *PS2_readline(bool PS1, sh_state *state)
 {
 	char *input = NULL;
 	size_t buf_bytes = 0; /* must be intialized or segfault on getline */
 	bool tty;
+	ssize_t read_bytes = 0;
 
 	tty = isatty(STDIN_FILENO);
 	if (tty)
@@ -125,7 +137,7 @@ char *PS2_readline(sh_state *state, bool PS1)
 		state->exit_code = -1;
 		return (NULL);
 	}
-	if (getline(&input, &buf_bytes, stdin) == -1)
+	if ((read_bytes = getline(&input, &buf_bytes, stdin)) == -1)
 	{ /* getline failure or EOF reached / ctrl+d entered by user */
 		if (input)
 			free(input);
@@ -150,7 +162,122 @@ char *PS2_readline(sh_state *state, bool PS1)
 }
 
 
-void assignIORedirects(cmd_list *cmd, sh_state *state);
+void restoreStdFDs(sh_state *state)
+{
+	if (!state)
+	{
+		fprintf(stderr, "restoreStdFDs: missing argument\n");
+		return;
+	}
+
+        if (state->child_stdin_bup != -1)
+	{
+		/* restore stdin to default before child process */
+		if (dup2(state->child_stdin_bup, STDIN_FILENO) == -1)
+		{
+			perror("restoreStdFDs: dup2 error");
+			return;
+		}
+		if (close(state->child_stdin_bup) == -1)
+		{
+			perror("restoreStdFDs: close error");
+			return;
+		}
+		state->child_stdin_bup = -1;
+	}
+
+        if (state->child_stdout_bup != -1)
+	{
+		/* restore stdout to default before child process */
+		if (dup2(state->child_stdout_bup, STDOUT_FILENO) == -1)
+		{
+			perror("restoreStdFDs: dup2 error");
+			return;
+		}
+		if (close(state->child_stdout_bup) == -1)
+		{
+			perror("restoreStdFDs: close error");
+			return;
+		}
+		state->child_stdout_bup = -1;
+	}
+}
+
+
+void setInputFD(cmd_list *cmd, sh_state *state)
+{
+	if (!cmd || !state)
+	{
+		fprintf(stderr, "setInputFD: missing args\n");
+		return;
+	}
+
+	if (cmd->input_fd != -1)
+	{
+		/* backup stdin */
+		if ((state->child_stdin_bup = dup(STDIN_FILENO)) == -1)
+		{
+			perror("setInputFD: dup error");
+			return;
+		}
+		if (close(STDIN_FILENO) == -1)
+		{
+			perror("setInputFD: close error");
+			return;
+		}
+
+		/* map cmd input fd to stdin */
+		if (dup2(cmd->input_fd, STDIN_FILENO) == -1)
+		{
+			perror("setInputFD: dup2 error");
+			return;
+		}
+		if (close(cmd->input_fd) == -1)
+		{
+			perror("setInputFD: close error");
+			return;
+		}
+	}
+}
+
+
+void setOutputFD(cmd_list *cmd, sh_state *state)
+{
+	if (!cmd || !state)
+	{
+		fprintf(stderr, "setOutputFD: missing args\n");
+		return;
+	}
+
+	if (cmd->output_fd != -1)
+	{
+		/* backup stdin */
+		if ((state->child_stdout_bup = dup(STDOUT_FILENO)) == -1)
+		{
+			perror("setOutputFD: dup error");
+			return;
+		}
+		if (close(STDOUT_FILENO) == -1)
+		{
+			perror("setOutputFD: close error");
+			return;
+		}
+
+		/* map cmd output fd to stdout */
+		if (dup2(cmd->output_fd, STDOUT_FILENO) == -1)
+		{
+			perror("setOutputFD: dup2 error");
+			return;
+		}
+		if (close(cmd->output_fd) == -1)
+		{
+			perror("setOutputFD: close error");
+			return;
+		}
+	}
+}
+
+
 void assignIORedirects(cmd_list *cmd, sh_state *state)
 {
 	st_list *st_temp = NULL;
@@ -170,7 +297,6 @@ void assignIORedirects(cmd_list *cmd, sh_state *state)
 		        open_flags = O_WRONLY | O_CREAT;
 			if (st_temp->p_op == ST_APPEND)
 			        open_flags |= O_APPEND;
-
 			/* 0664 is -rw-rw-r-- per bash default */
 			if ((out_file = open(st_temp->token,
 					     open_flags, 0664)) != -1)
@@ -181,7 +307,7 @@ void assignIORedirects(cmd_list *cmd, sh_state *state)
 		else if (st_temp->p_op == ST_RD_IN)
 		{
 			if ((in_file = open(st_temp->token,
-					    O_RDONLY, 0664)) != -1)
+					    O_RDONLY)) != -1)
 				cmd->input_fd = in_file;
 			else
 				cantOpenFileErr(st_temp->token, state);
@@ -189,25 +315,46 @@ void assignIORedirects(cmd_list *cmd, sh_state *state)
 		else if (st_temp->p_op == ST_HEREDOC)
 			setHeredoc(cmd, st_temp->token, state);
 
-		if ((st_temp->next && st_temp->next->p_op == ST_PIPE) &&
-		    (cmd->output_fd == -1 &&
-		     cmd->next && cmd->next->input_fd == -1))
-		{
-			/* open pipe, set write end to cmd->out, read end to cmd->next->in */
-			/* sh: ls | cat << DELIM will use the heredoc for stdin */
-			/* so only set the fds if not already set (if -1) */
-		}
+		if (cmd->next && cmd->next->seq_op == ST_PIPE)
+			pipeSegment(cmd, state);
 
 		st_temp = st_temp->next;
 	}
 }
 
 
-void setHeredoc(cmd_list *cmd, char *delim, sh_state *state);
+void pipeSegment(cmd_list *cmd, sh_state *state)
+{
+	int pipe_fds[2];
+
+	if (!cmd || !state)
+	{
+		fprintf(stderr, "pipeSegment: missing args\n");
+		return;
+	}
+
+	/* e.g. sh: ls | cat << DELIM - cat will use the heredoc for stdin */
+	/* so only set the fds if not already set (if -1) */
+	if (cmd->output_fd != -1 ||
+	    (cmd->next && cmd->next->input_fd != -1))
+		return;
+
+	if (pipe(pipe_fds) != -1)
+	{
+		cmd->output_fd = pipe_fds[WRITE];
+
+		if (cmd->next)
+			cmd->next->input_fd = pipe_fds[READ];
+	}
+	else
+		perror("pipeSegment: pipe error");
+}
+
+
 void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 {
 	int pipe_fds[2];
-	char *line = NULL, *heredoc = NULL;
+	char *heredoc = NULL;
 
 	if (pipe(pipe_fds) != -1)
 	{
@@ -223,14 +370,13 @@ void setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 		close(pipe_fds[WRITE]);
 	}
 	else
-		perror("setHeredoc: pipe error:");
+		perror("setHeredoc: pipe error");
 }
 
 
 
 
 /* goes through secondary input loop to store multiline input */
-char *addtnlUsrInput(char *delim, sh_state *state);
 char *addtnlUsrInput(char *delim, sh_state *state)
 {
 	char *buff = NULL, *line = NULL, *resized_buf = NULL;
@@ -245,7 +391,7 @@ char *addtnlUsrInput(char *delim, sh_state *state)
 		return (NULL);
 	}
 	buf_units++;
-        while ((line = PS2_readline(state)) != NULL)
+        while ((line = PS2_readline(false, state)) != NULL)
 	{
 		line_len = _strlen(line);
 		if (_strncmp(line, delim, line_len - 1) == 0)

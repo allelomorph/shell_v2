@@ -60,7 +60,7 @@ int _env(sh_state *state)
 /* __exit: sub: freeShellState */
 /* !!! needs other allocated memory besides state (line) to free before exit */
 /* or, it can set a flag to be seen by shellLoop to exit and free via main return path */
-void __exit(char *code, char *line, char **tokens, sh_state *state)
+void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state)
 {
 	int e_code;
 
@@ -84,8 +84,8 @@ void __exit(char *code, char *line, char **tokens, sh_state *state)
 
 /* !!! is there a more elegant way to bring in tokens and line for freeing? maybe in state? */
 /* wait for CMD struct refactor */
-	free(tokens);
 	free(line);
+	freeCmdList(&cmd_head);
 	freeShellState(state);
 	exit(e_code);
 }
