@@ -171,7 +171,7 @@ void testPrSTList(st_list *head);
 void checkInitScript(sh_state *state);
 void checkArgScript(char *file_path, sh_state *state);
 void setScriptFds(sh_state *state);
-int unsetScriptFds(sh_state *state);
+bool unsetScriptFds(sh_state *state);
 
 
 /* shellLoop-subr.c */
