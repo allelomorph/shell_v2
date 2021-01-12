@@ -106,6 +106,7 @@ int _setenv(char *var, char *value, sh_state *state)
 	for (i = 0; var[i]; i++)
 		if (var[i] == '=')
 			eq_found = true;
+	/* if "" or contains '=' */
 	if (!var[0] || eq_found)
 	{
 		fprintf(stderr, "_setenv: invalid variable name\n");

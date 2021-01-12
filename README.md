@@ -1,45 +1,76 @@
 # Cascara
-Cascara is a simple command line interpreter written in C.
+Cascara is a simple command line interpreter written in C, built to primarily emulate the version of sh pakcaged with Ubuntu 14.04 LTS, aka dash or the Debian Almquist Shell. Some features from bash are also included.
 
-## Deployment
-Version 0.2 was built during the COVID-19 pandemic and the "Shelter in Place" order in California, USA.
+## Development
+Versions 0.2-1.0 were built as a team student project between Samuel Pomeroy and Cynthia Taylor as the final project in a semester of introductory C programming. The shell at that time had no lexing beyond delimiting tokens by whitespace, and could not handle any sequence or redirection operators.
+
+This version 2.0 was developed alone by Samuel Pomeroy early in his second year of instruction after entering the Low Level and System Algorithm specialization. The assignment takes the core REPL from the previous iteration and adds the need to handle file descriptors for I/O redirection, logcial sequence operators to direct execution of following commands based on the exit code of the previous, and command sequence breaks, plus several other optional addtions.
+
+First the REPL from version 1.0 was refactored to clean out waste and improve the core functionality. Then several new data structres were introduced to allow for flexibility in the task of lexing more complex syntax that could include mulitple commands within a command line, and potentially also variable and alias expansion. Several design decisions were influenced by the restrictions of the the assignment: for example, global variables were forbidden, so insetad a data structure containing the shell "state" was implemented. At several points subroutines are split off some what arbitrarily due to the style guide mandating functions of 40 lines or less. 
 
 ## Installation
-Cascara can be downloaded from the GitHub repository [simple_shell](https://github.com/cg-taylor/simple_shell)
+Cascara 2.0 can be cloned from the GitHub repository [shell_v2](https://github.com/allelomorph/shell_v2)
 
 ## Compilation
+A Makefile is included, so if you have `make` or a compatible program, you can simply enter
 ```c
-gcc -Wall -Werror -Wextra -pedantic *.c -o hsh
+make
+```
+in the cloned repository. If you wish to compile manually, it can be done with
+```c
+gcc -Wall -Werror -Wextra -pedantic *.c *.h -o hsh
 ```
 
-## To Run Shell:
+## Use
+To use in interactive REPL mode, simply lauch the executable with
 ```c
 ./hsh
 ```
-or
+Interactive mode can be exited with either `exit` or ctrl + d.
+
+The shell can also be run non-interactively by either piping in commands via the parent shell
 ```c
-echo [command] | ./hsh
+echo "<commands>" | ./hsh
+```
+or by passing a script as an argument
+
+```c
+./hsh <scriptname>
 ```
 
 ## Commands
-Cascara runs executable commands that can be found in the PATH, and can handle:
+Cascara executable commands that can be found via the PATH, in addtion to several builtins:
 * env
-* Ctrl + D
+* setenv
+* unsetenv
+* cd
 * exit
 
 ## Included Files
-* holberton.h:
-	header file containing all prototypes and two structs definitions
-* cascara.c:
-	main file containing the shellLoop function
-* loop_help.c:
-	contains helper functions that process user input
-* ETC_help.c:
-	contains helper functions for simple manipulation of environment variables
-* string_help.c:
-	contains helper functions that manipulate strings
-* _which.c:
-	searches for a command in the PATH and determines if it is valid and executable
+
+| file 		| file contents   |
+| ------------- | ----------------------------------------------------------------------------------------- |
+| holberton.h	| Single header for entire build, contains all struct definitions and function declarations |
+| hsh.c		| Main and shell state init setup and teardown functions |
+| builtin_cd.c	| Builtin `cd` and its helper functions |
+| builtins.c 	| All other shell builtin functions |
+| cmd_lists.c	| Functions for handling command list structs |
+| errors1.c   	| Error return functions - mimics `sh`'s error messages and sets shell exit code |
+| errors2.c	| Error return functions - mimics `sh`'s error messages and sets shell exit code |
+| execution.c	| Functions that take fully lexed and parsed commands and set them in order by logical operators, and then fork into child processes to execute |
+| kv_lists1.c	| Key-value list functions to manage the dictionary approximating data structure used for env variables |
+| kv_lists2.c	| Key-value list functions to manage the dictionary approximating data structure used for env variables |
+| lexing.c	| The lexing function to break up raw user input lines into syntax tokens, and its helpers |
+| redirects1.c	| Functions that handle I/O redirections |
+| redirects2.c	| Functions that handle I/O redirections |
+| redirects3.c	| Functions that handle I/O redirections |
+| shell_scripts.c | Script handling functions - check for, open, and manage fds for shell and init scripts |
+| shell_loop.c 	| Main REPL loop function and helpers |
+| st_lists.c	| Syntax token list functions to manage the list structure used to store syntax tokens |
+| string_utils1.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
+| string_utils2.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
+| string_utils3.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
+| _which.c	| Function that searches for the full executable path for a given command name |
 
 ## Example
 Interactive Mode
@@ -77,13 +108,20 @@ $
 ```
 
 ## Release History
-* 0.2 - First release - 17 Apr 2020
+* 1.0 - First release - 17 Apr 2020
+* 2.0 - Update for second year assignment - 12 Jan 2021
 
 ## Authors
+### 2.0
+* **Samuel Pomeroy** - [allelomorph](github.com/allelomorph)
+
+Holberton School, SF campus, cohort 11 - Low Level and System Algorithm specialization 1st trimester
+
+### 1.0
 * **Samuel Pomeroy** - [allelomorph](github.com/allelomorph)
 * **Cynthia Taylor** - [cg-taylor](github.com/cg-taylor)
 
-Written for Holberton School, SF Campus, Cohort 11 - 1st Trimester Final Project
+Holberton School, SF campus, cohort 11 - 1st trimester final project
 
 ## Other Information
 Cascara is the Spanish word for shell.
