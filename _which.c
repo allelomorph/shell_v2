@@ -13,30 +13,14 @@
 #include <string.h>
 
 
-/* _which: std: strtok free */
-/* _which: sub: getKVPair testExecPath _strdup */
 /* testExecPath: std: malloc fprintf sprintf access perror free */
 /* testExecPath: sub: _strlen */
-
-
-/* testExecPath: std: malloc fprintf sprintf access perror free */
-/* testExecPath: sub: _strlen */
-
-/* maybe also testReadPath and testWritePath for redirects? */
-/* testExecPath(path, filename)
-        malloc new buffer
-       concatenates "<path>/<filename>"
-       runs access F_OK X_OK of abs_path
-       frees buf on failure
-       returns abs_path on success, NULL on failure
-*/
 /**
- * test_path - subroutine for _which, searches through string array paths,
- * concatenating paths[i] with '/' + func, and testing it for accessibility
- * @func: name of program
- * @paths: previously allocated array of colon delimited paths in PATH
- * Return: string containing full valid path of executable, func if none found,
- * or NULL on failure
+ * testExecPath -
+ *
+ * @path:
+ * @filename:
+ * Return: , or NULL on failure
  */
 char *testExecPath(char *path, char *filename, sh_state *state)
 {
@@ -59,14 +43,12 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 	{
 		p_len = _strlen(path);
 		fn_len = _strlen(filename);
-/* !!! should we be setting state->exit_code here and other subroutine fails, or are they only for testing? */
 		test_path = malloc(sizeof(char) * (p_len + fn_len + 2));
 		if (!test_path)
 		{
 			fprintf(stderr, "testExecPath: malloc failure\n");
 			return (NULL);
 		}
-/* !!! same path prepending as in checkInitScript - popout into subr? */
 		sprintf(test_path, "%s/%s", path, filename);
 		test_path[(p_len + fn_len + 1)] = '\0';
 	}
@@ -84,18 +66,12 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 
 /* _which: std: strtok free */
 /* _which: sub: getKVPair testExecPath _strdup */
-
-/* _which
-       returns whatever is valid path, including testing PWD/filename
-       NULL on failure
-
-       abs_path = _which(args[0])
- */
 /**
  * _which - returns full valid pathname for the executable file named
  * as argument, found by searching through all colon delimted paths in PATH
- * @func: name of program
- * @my_env: previously allocated copy of parent process' environ array
+ *
+ * @exec: name of program
+ * @state: struct containing information needed globally by most functions
  * Return: string containing full valid path of executable, original
  * av[0] if none found, or NULL on failure
  */

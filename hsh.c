@@ -3,20 +3,21 @@
 /* free */
 #include <stdlib.h>
 
-
-/* freeShellState: std: free */
-/* freeShellState: sub: freeKVList */
-/* initShellState: std: (none) */
-/* initShellState: sub: KVListFromStrArr */
-/* shellLoop: std: free */
-/* shellLoop: sub: setScriptFds _readline unsetScriptFds countTokens tokenize checkBuiltins runCommand */
-/* main: std: (none) */
-/* main: sub: initShellState checkInitScript checkArgScript shellLoop freeShellState */
+/* fprintf */
+#include <stdio.h>
 
 
-
-/* initShellState: std: (none) */
-/* initShellState: sub: KVListFromStrArr */
+/* initShellState: std: fprintf */
+/* initShellState: sub: _strdup KVListFromStrArr */
+/**
+ * initShellState - initializes the shell state struct with its default
+ * values and data; env is converted to key-value SLL
+ *
+ * @state: struct containing information needed globally by most functions
+ * @exec_name: name of script from argv[1] of main, if used
+ * @env: inherited array of environmental variables
+ * Return: 0 on success, 1 on failure
+ */
 int initShellState(sh_state *state, char *exec_name, char **env)
 {
 	kv_list *env_vars;
@@ -29,22 +30,17 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 		return (1);
 	}
 
-        env_vars = KVListFromStrArr(env);
+	env_vars = KVListFromStrArr(env);
 
 	state->exec_name = exec_n;
 	state->scrp_name = NULL;
 	state->loop_count = 0;
 	state->exit_code = 0;
 	state->env_vars = env_vars;
-	/*
-	state->sh_vars = sh_vars;
-	state->aliases = NULL;
-	*/
-	/*
-        state->env_var_copies = NULL;
-	state->alias_copies = NULL;
-	*/
-	/* -1 serves as NULL state for fds here */
+	/* state->sh_vars = sh_vars; */
+	/* state->aliases = NULL; */
+	/* state->env_var_copies = NULL; */
+	/* state->alias_copies = NULL; */
 	state->child_stdin_bup = -1;
 	state->child_stdout_bup = -1;
 	state->stdin_bup = -1;
@@ -57,6 +53,12 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 
 /* freeShellState: std: free */
 /* freeShellState: sub: freeKVList */
+/**
+ * freeShellState - frees all allocated memory stored in the shell state struct
+ * at time of shell closure
+ *
+ * @state: struct containing information needed globally by most functions
+ */
 void freeShellState(sh_state *state)
 {
 	if (state->exec_name)
@@ -69,24 +71,24 @@ void freeShellState(sh_state *state)
 		freeKVList(&(state->env_vars));
 
 	/*
-	if (state->sh_vars)
-		freeKVList(&(state->sh_vars));
-
-	if (state->aliases)
-		freeKVList(&(state->aliases));
-	*/
-	/*
-	if (state->env_var_copies)
-		strArrFree(state->var_copies);
-
-	if (state->alias_copies)
-		strArrFree(state->alias_copies);
-	*/
+	 *if (state->sh_vars)
+	 *	freeKVList(&(state->sh_vars));
+	 *
+	 *if (state->aliases)
+	 *	freeKVList(&(state->aliases));
+	 *
+	 *if (state->env_var_copies)
+	 *       strArrFree(state->var_copies);
+	 *
+	 *if (state->alias_copies)
+	 *	strArrFree(state->alias_copies);
+	 */
 }
 
 
 /* main: std: (none) */
-/* main: sub: initShellState checkInitScript checkArgScript shellLoop freeShellState */
+/* main: sub: initShellState checkInitScript checkArgScript */
+/* shellLoop freeShellState */
 /**
  * main - entry point
  * @argc: argument count
@@ -102,21 +104,15 @@ int main(int argc, char **argv, char **env)
 		return (-1);
 
 	checkInitScript(&state);
-/*
-	printf("   main: checkInitScript done\n");
-	*/
-/* !!! should open errors print shell loop 0 here, or loop count after executing ~/.hshrc ? */
+
 	if (argc > 1) /* sh simply ignores args after first */
 		checkArgScript(argv[1], &state);
-/*
-	printf("   main: checkArgScript done\n");
-*/
+
 	/* script check failures set exit code to 127 */
 	if (state.exit_code == 0)
 		shellLoop(&state);
-/*
-	printf("   main: shellLoop normal return\n");
-*/
+
 	freeShellState(&state);
+
 	return (state.exit_code);
 }

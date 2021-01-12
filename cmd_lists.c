@@ -1,12 +1,19 @@
 #include "holberton.h"
 
-/* fprintf */
+/* printf fprintf */
 #include <stdio.h>
 
-/* free */
+/* malloc free */
 #include <stdlib.h>
 
 
+/* freeCmdList: std: free */
+/* freeCmdList: sub: freeSTList */
+/**
+ * freeCmdList - frees all memory allocated to a cmd_list SLL of commands
+ *
+ * @head: double pointer to head of SLL of current shell commands
+ */
 void freeCmdList(cmd_list **head)
 {
 	cmd_list *temp1 = NULL, *temp2 = NULL;
@@ -29,6 +36,13 @@ void freeCmdList(cmd_list **head)
 }
 
 
+/* freeCmdList: std: malloc fprintf */
+/* freeCmdList: sub: (none) */
+/**
+ * createNewCmd - allocates and initializes a new cmd_list node
+ *
+ * Return: pointer to new cmd_list struct, or NULL on failure
+ */
 cmd_list *createNewCmd(void)
 {
 	cmd_list *new = NULL;
@@ -50,6 +64,13 @@ cmd_list *createNewCmd(void)
 }
 
 
+/* testPrintCmdList: std: printf */
+/* testPrintCmdList: sub: (none) */
+/**
+ * testPrintCmdList - prints command list, intended only for development use
+ *
+ * @head: head of current command list
+*/
 void testPrintCmdList(cmd_list *head)
 {
 	cmd_list *cmd_temp = NULL;

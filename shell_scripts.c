@@ -17,16 +17,11 @@
 
 /* checkInitScript: std: malloc fprintf sprintf open free */
 /* checkInitScript: sub: getKVpair _strlen */
-/* checkArgScript: std: open fprintf */
-/* checkArgScript: sub: _strdup */
-/* setScriptFds: std: dup perror dup2 close */
-/* setScriptFds: sub: (none) */
-/* unsetScriptFds: std: dup2 perror close */
-/* unsetScriptFds: sub: (none) */
-
-
-/* checkInitScript: std: malloc fprintf sprintf open free */
-/* checkInitScript: sub: getKVpair _strlen */
+/**
+ * checkInitScript -
+ *
+ * @state: struct containing information needed globally by most functions
+ */
 void checkInitScript(sh_state *state)
 {
 	int new_fd, home_len, init_len = 6;
@@ -63,6 +58,12 @@ void checkInitScript(sh_state *state)
 
 /* checkArgScript: std: open fprintf */
 /* checkArgScript: sub: _strdup */
+/**
+ * checkArgScript -
+ *
+ * @file_path:
+ * @state: struct containing information needed globally by most functions
+ */
 void checkArgScript(char *file_path, sh_state *state)
 {
 	int new_fd;
@@ -86,15 +87,16 @@ void checkArgScript(char *file_path, sh_state *state)
 
 /* setScriptFds: std: dup perror dup2 close */
 /* setScriptFds: sub: (none) */
-/* !!! can the dup/dup2/close cycle become a subroutine? */
+/**
+ * setScriptFds -
+ *
+ * @state: struct containing information needed globally by most functions
+ */
 void setScriptFds(sh_state *state)
 {
 	/* each fd is reset to -1 by unsetScriptFds after _readline == NULL */
 	if (state->init_fd != -1) /* init script is open, executed first */
 	{
-/*
-		printf("\t\tsetScriptFds1: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
 		/* backup of inherited std fd */
 		if ((state->stdin_bup = dup(STDIN_FILENO)) == -1)
 			perror("setScriptFds: dup error");
@@ -107,17 +109,11 @@ void setScriptFds(sh_state *state)
 		/* cleanup by closing original once copied */
 		if (close(state->init_fd) == -1)
 			perror("setScriptFds: close error");
-/*
-		printf("\t\tsetScriptFds set init: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
 		return;
 	}
 
 	if (state->arg_fd != -1) /* arg script is open */
 	{
-/*
-		printf("\t\tsetScriptFds3: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
 		if (state->stdin_bup == -1)
 		{
 			/* backup of inherited std fd */
@@ -133,26 +129,21 @@ void setScriptFds(sh_state *state)
 		/* cleanup by closing original once copied */
 		if (close(state->arg_fd) == -1)
 			perror("setScriptFds: close error");
-/*
-		printf("\t\tsetScriptFds set arg: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
 	}
 }
 
 
 /* unsetScriptFds: std: dup2 perror close */
 /* unsetScriptFds: sub: (none) */
-/* !!! can the dup2/close cycle become a subroutine? */
+/**
+ * unsetScriptFds -
+ *
+ * @state: struct containing information needed globally by most functions
+ */
 bool unsetScriptFds(sh_state *state)
 {
 	if (state->init_fd != -1) /* init script is still open on stdin */
 	{
-/*
-		printf("\t\tunsetScriptFds1: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
-/*
-		printf("\t\tunsetScriptFds3: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
 		if (dup2(state->stdin_bup, STDIN_FILENO) == -1)
 			perror("unsetScriptFds: dup2 error");
 		if (state->arg_fd == -1)
@@ -165,18 +156,13 @@ bool unsetScriptFds(sh_state *state)
 		}
 
 		state->init_fd = -1; /* reset to init value */
-/*
-		printf("\t\tunsetScriptFds unset init: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
+
 		/* .hshrc EOF, signal shellLoop to continue w/ new stdin */
 		return (true);
 	}
 
 	if (state->arg_fd != -1) /* arg script is still open on stdin */
 	{
-/*
-		printf("\t\tunsetScriptFds5: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
 		/* REPL is closing on this loop; restoring fd for safety */
 		if (dup2(state->stdin_bup, STDIN_FILENO) == -1)
 			perror("unsetScriptFds: dup2 error");
@@ -186,8 +172,6 @@ bool unsetScriptFds(sh_state *state)
 		state->arg_fd = -1; /* reset to init value */
 		state->stdin_bup = -1; /* reset to init value */
 	}
-/*
-	printf("\t\tunsetScriptFds unset arg: arg_fd: %i init_fd: %i stdin_bup: %i\n", state->arg_fd, state->init_fd, state->stdin_bup);
-*/
+
 	return (false); /* signals shellLoop to stop */
 }

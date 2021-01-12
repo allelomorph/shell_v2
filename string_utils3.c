@@ -7,25 +7,12 @@
 #include <stdio.h>
 
 
-/* _strndup: std: malloc fprintf */
-/* _strndup: sub: _strlen */
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: _strlen */
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: (none) */
-/* _strcmp: std: (none) */
-/* _strcmp: sub: (none) */
-/* _strncmp: std: (none) */
-/* _strncmp: sub: (none) */
-/* _strlen: std: (none) */
-/* _strlen: sub: (none) */
-
-
 /* _strcmp: std: (none) */
 /* _strcmp: sub: (none) */
 /* added compliance with strcmp + NULL arg protection */
 /**
  * _strcmp - compares two strings
+ *
  * @s1: pointer to the first string
  * @s2: pointer to the second string
  * Return: the difference between the ASCII values of the first non-matching
@@ -61,10 +48,11 @@ int _strcmp(char *s1, char *s2)
 /* strncmp compliance + NULL protection */
 /**
  * _strncmp - compares a given amount of bytes between two strings
+ *
  * @str1: first string to compare
  * @str2: second string to compare
  * @n: number of bytes to compare
- * Return: 
+ * Return:
  */
 int _strncmp(char *s1, char *s2, unsigned int n)
 {
@@ -102,6 +90,7 @@ int _strncmp(char *s1, char *s2, unsigned int n)
 /* _strlen: sub: (none) */
 /**
  * _strlen - counts char bytes in a string, not inlcuding null byte
+ *
  * @s: string to be measured
  * Return: length of string
  */
@@ -121,6 +110,7 @@ unsigned int _strlen(char *s)
 
 /**
  * _strcat - concatenates two strings
+ *
  * @dest: string to have content added from str
  * @src: string to be read
  * Return: pointer to dest

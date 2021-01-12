@@ -1,20 +1,25 @@
 #include "holberton.h"
 
-/* open */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-/* wait (+sys/types) */
-#include <sys/wait.h>
-
-/* fork execve _exit isatty dup2 pipe write */
+/* close */
 #include <unistd.h>
 
-/* free malloc exit */
+/* free malloc */
 #include <stdlib.h>
 
+/* perror fprintf write */
+#include <stdio.h>
 
+
+/* setHeredoc: std:  */
+/* setHeredoc: sub:  */
+/**
+ * setHeredoc -
+ *
+ * @cmd:
+ * @delim:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 {
 	int pipe_fds[2];
@@ -60,9 +65,16 @@ int setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 }
 
 
-
-
 /* goes through secondary input loop to store multiline input */
+/* getHeredoc: std:  */
+/* getHeredoc: sub:  */
+/**
+ * getHeredoc -
+ *
+ * @delim:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 char *getHeredoc(char *delim, sh_state *state)
 {
 	char *buff = NULL, *line = NULL, *resized_buf = NULL;
@@ -75,7 +87,7 @@ char *getHeredoc(char *delim, sh_state *state)
 		return (NULL);
 
 	buf_units++;
-        while ((line = _readline(false, state)) != NULL)
+	while ((line = _readline(false, state)) != NULL)
 	{
 		line_len = _strlen(line);
 		if (_strncmp(line, delim, line_len - 1) == 0)
@@ -104,6 +116,15 @@ char *getHeredoc(char *delim, sh_state *state)
 	return (buff);
 }
 
+
+/* emptyCharBuff: std:  */
+/* emptyCharBuff: sub:  */
+/**
+ * emptyCharBuff -
+ *
+ * @size:
+ * Return: , NULL on failure
+ */
 char *emptyCharBuff(unsigned int size)
 {
 	char *buff = NULL;
@@ -121,4 +142,3 @@ char *emptyCharBuff(unsigned int size)
 
 	return (buff);
 }
-

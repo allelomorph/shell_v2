@@ -9,13 +9,16 @@
 /* strtok */
 #include <string.h>
 
-/* trimComments: std: (none) */
-/* trimComments: sub: (none) */
-/* strtokSubstr: std: fprintf */
-/* strtokSubstr: sub: _strlen _strncmp */
 
-
-
+/* lineLexer: std: malloc fprintf */
+/* lineLexer: sub: trimComments lexByDelim lexByWhtSpc */
+/**
+ * lineLexer -
+ *
+ * @line:
+ * @state: struct containing information needed globally by most functions
+ * Return: , NULL on failure
+ */
 st_list *lineLexer(char *line, sh_state *state)
 {
 	st_list *head = NULL;
@@ -38,7 +41,7 @@ st_list *lineLexer(char *line, sh_state *state)
 	head->p_op = ST_NONE;
 	head->next = NULL;
 
-/* !!! can we make this a loop that calls enumerated array of args? */
+/* !!! can this be a loop that calls enumerated array of args? */
 	/* subdivide token list to record ; occurances */
 	lexByDelim(head, NULL, ";", ST_CMD_BRK);
 	/* subdivide token list to record && occurances */
@@ -129,9 +132,15 @@ int varExpansion(st_list *head, sh_state *state)
 #endif
 
 
+/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
 /* trimComments: std: (none) */
 /* trimComments: sub: (none) */
-/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
+/**
+ * trimComments -
+ *
+ * @line:
+ * @whtsp:
+ */
 void trimComments(char *line, char *whtsp)
 {
 	int i, j;
@@ -163,6 +172,17 @@ void trimComments(char *line, char *whtsp)
 }
 
 
+/* lexByDelim: std: (none) */
+/* lexByDelim: sub: _strlen strtokSubstr */
+/**
+ * lexByDelim -
+ *
+ * @begin:
+ * @end:
+ * @delim:
+ * @p_op_code:
+ * Return: 0 on success, 1 on failure
+ */
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
@@ -213,6 +233,16 @@ int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 /* largely redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
 /* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
 /* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
+
+/* lexByDelim: std: (none) */
+/* lexByDelim: sub: _strlen strtokSubstr */
+/**
+ * lexByWhtSpc -
+ *
+ * @begin:
+ * @end:
+ * Return: 0 on success, 1 on failure
+ */
 int lexByWhtSpc(st_list *begin, st_list *end)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
@@ -265,5 +295,3 @@ int lexByWhtSpc(st_list *begin, st_list *end)
 	}
 	return (0);
 }
-
-

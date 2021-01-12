@@ -3,35 +3,20 @@
 /* free malloc */
 #include <stdlib.h>
 
-/* fprintf sprintf */
+/* fprintf */
 #include <stdio.h>
 
-/* !!!strndup */
-#include <string.h>
 
-
-/* freeKVList: std: free */
-/* freeKVList: std: (none) */
-/* StrArrFromKVList: std: malloc fprintf sprintf */
-/* StrArrFromKVList: sub: _strlen strArrFree */
-/* KVListFromStrArr: std: (none) */
-/* KVListFromStrArr: sub: addKVListNode */
+/* separate KVPairFromDlmStr { newKVPair, addToSLLTail } ? */
 /* addKVListNode: std: malloc */
-/* addKVListNode: sub: _strdup _strndup */
-
-/* addKVPair: std: malloc fprintf free */
-/* addKVPair: sub: _strdup */
-/* getKVPair: std: (none) */
-/* getKVPair: sub: _strcmp */
-/* removeKVPair: std: free */
-/* removeKVPair: sub: getKVPair */
-
-
-/* addKVListNode: std: malloc */
-/* addKVListNode: sub: _strdup _strndup */
-/* !!! may separate into KVPairFromStr and addToTail - currently overlaps with */
-/* addKVPair, and addToTail could be used with other SLL types */
-/* KVPairFromDlmStr  / newKVPair, addToSLLTail }*/
+/* addKVListNode: sub: _strdup _strndup freeKVList */
+/**
+ * addKVListNode -
+ *
+ * @head:
+ * @kv_str:
+ * Return: , NULL on failure
+ */
 kv_list *addKVListNode(kv_list **head, char *kv_str)
 {
 	kv_list *new, *temp;
@@ -77,11 +62,17 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 
 /* addKVPair: std: malloc fprintf free */
 /* addKVPair: sub: _strdup */
-/* adds to head of list */
-/* newKVPair addToSLLHead  */
+/**
+ * addKVPair -
+ *
+ * @head:
+ * @key:
+ * @value:
+ * Return: , NULL on failure
+ */
 kv_list *addKVPair(kv_list **head, char *key, char *value)
 {
-        kv_list *new = NULL;
+	kv_list *new = NULL;
 
 	if (!head || !key || !value)
 		return (NULL);
@@ -118,6 +109,14 @@ kv_list *addKVPair(kv_list **head, char *key, char *value)
 
 /* getKVPair: std: (none) */
 /* getKVPair: sub: _strcmp */
+/**
+ * getKVPair - moves to a new working directory, based on the supplied args and
+ * state of the HOME, OLDPWD, and PWD environmental variables
+ *
+ * @head:
+ * @key:
+ * Return: , NULL on failure
+ */
 kv_list *getKVPair(kv_list *head, char *key)
 {
 	kv_list *temp = NULL;
@@ -140,6 +139,12 @@ kv_list *getKVPair(kv_list *head, char *key)
 
 /* removeKVPair: std: free */
 /* removeKVPair: sub: getKVPair */
+/**
+ * removeKVPair -
+ *
+ * @head:
+ * @key:
+ */
 void removeKVPair(kv_list **head, char *key)
 {
 	kv_list *target = NULL, *temp = NULL;

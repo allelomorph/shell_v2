@@ -7,25 +7,12 @@
 #include <stdio.h>
 
 
-/* _strndup: std: malloc fprintf */
-/* _strndup: sub: _strlen */
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: _strlen */
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: (none) */
-/* _strcmp: std: (none) */
-/* _strcmp: sub: (none) */
-/* _strncmp: std: (none) */
-/* _strncmp: sub: (none) */
-/* _strlen: std: (none) */
-/* _strlen: sub: (none) */
-
-
-/* _strndup: std: malloc fprintf */
-/* _strndup: sub: _strlen */
 /* stock strndup + NULL arg protection */
+/* _strndup: std: malloc fprintf */
+/* _strndup: sub: _strlen */
 /**
  * _strndup - copies n bytes of string + terminating '\0' into newly allocated memory
+ *
  * @str: string to be copied
  * @n:
  * Return: char pointer to new string
@@ -35,7 +22,6 @@ char *_strndup(char *str, unsigned int n)
 	unsigned int i, str_len, dup_len;
 	char *dup = NULL;
 
-/* !!! changed from (!str) when building varExpansion */
 	if (str == NULL)
 		return (NULL);
 
@@ -62,6 +48,7 @@ char *_strndup(char *str, unsigned int n)
 /* _strdup: sub: (none) */
 /**
  * _strdup - copies string into newly allocated memory, including '\0'
+ *
  * @str: string to be copied
  * Return: char pointer to new string
  */
@@ -70,7 +57,6 @@ char *_strdup(char *str)
 	int i, len;
 	char *dup = NULL;
 
-/* !!! changed from (!str) when building varExpansion */
 	if (str == NULL)
 		return (NULL);
 
@@ -91,13 +77,20 @@ char *_strdup(char *str)
 }
 
 
-/* strtokSubstr: std: fprintf */
-/* strtokSubstr: sub: _strlen _strncmp */
 /* 2 differences with stock strtok:
 1- mulitchar delim arg treated as if entire string is one delim
 2- when delimter found at beginning of string, end of string, or
 two tokens are adjacent in the string, returns "" token instead of skipping.
 */
+/* strtokSubstr: std: fprintf */
+/* strtokSubstr: sub: _strlen _strncmp */
+/**
+ * strtokSubstr -
+ *
+ * @str:
+ * @delim:
+ * Return: , or NULL on failure
+ */
 char *strtokSubstr(char *str, char *delim)
 {
 	static char *nextToken, *parseStr;

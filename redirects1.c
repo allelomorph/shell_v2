@@ -5,15 +5,25 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-/* wait (+sys/types) */
-#include <sys/wait.h>
-
-/* fork execve _exit isatty dup2 pipe write */
-#include <unistd.h>
-
-/* free malloc exit */
+/* free malloc */
 #include <stdlib.h>
 
+/* close */
+#include <unistd.h>
+
+/* fprintf */
+#include <stdio.h>
+
+
+/* assignIORedirects: std:  */
+/* assignIORedirects: sub:  */
+/**
+ * assignIORedirects -
+ *
+ * @cmd:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int assignIORedirects(cmd_list *cmd, sh_state *state)
 {
 	st_list *st_temp = NULL;
@@ -23,9 +33,6 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 		fprintf(stderr, "assignIORedirects: missing args\n");
 		return (1);
 	}
-/*
-	printf("\tassignIORedirects: before: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
-*/
 
 	if (cmd->next && cmd->next->seq_op == ST_PIPE)
 	{
@@ -48,24 +55,29 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 		}
 		else if (st_temp->p_op == ST_HEREDOC)
 		{
-		        if (setHeredoc(cmd, st_temp->token, state) != 0)
+			if (setHeredoc(cmd, st_temp->token, state) != 0)
 				return (1);
 		}
 		st_temp = st_temp->next;
 	}
-/*
-	printf("\tassignIORedirects: after: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
-*/
-/*
-	printf("\tassignIORedirects: state->child_stdin_bup:%i state->child_stdout_bup:%i\n", state->child_stdin_bup, state->child_stdout_bup);
-*/
 
 	setInputFD(cmd, state);
 	setOutputFD(cmd, state);
 	return (0);
 }
 
+
 /* curr could be any st in cmd, not just the head */
+/* openOutputFile: std:  */
+/* openOutputFile: sub:  */
+/**
+ * openOutputFile -
+ *
+ * @cmd:
+ * @st_curr:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int openOutputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 {
 	int out_file, open_flags;
@@ -108,6 +120,16 @@ int openOutputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 
 
 /* curr could be any st in cmd, not just the head */
+/* openInputFile: std:  */
+/* openInputFile: sub:  */
+/**
+ * openInputFile -
+ *
+ * @cmd:
+ * @st_curr:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int openInputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 {
 	int in_file;
@@ -141,6 +163,15 @@ int openInputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 }
 
 
+/* pipeSegment: std:  */
+/* pipeSegment: sub:  */
+/**
+ * pipeSegment -
+ *
+ * @cmd_list:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int pipeSegment(cmd_list *cmd, sh_state *state)
 {
 	int pipe_fds[2];
@@ -150,9 +181,6 @@ int pipeSegment(cmd_list *cmd, sh_state *state)
 		fprintf(stderr, "pipeSegment: missing args\n");
 		return (1);
 	}
-/*
-	printf("\tpipeSegment: top: cmd->input_fd:%i cmd->output_fd:%i\n", cmd->input_fd, cmd->output_fd);
-*/
 	/* e.g. sh: ls | cat << DELIM - cat will use the heredoc for stdin */
 	/* so only set the fds if not already set (if -1) */
 	if (cmd->output_fd != -1 ||
@@ -171,8 +199,6 @@ int pipeSegment(cmd_list *cmd, sh_state *state)
 		perror("pipeSegment: pipe error");
 		return (1);
 	}
-/*
-	printf("\tpipe set: read:%i write:%i\n", pipe_fds[READ], pipe_fds[WRITE]);
-*/
+
 	return (0);
 }

@@ -26,7 +26,6 @@ void freeSTList(st_list **head)
 }
 
 
-
 /* !!! modified to ignore redirection tokens instead of excising them earlier */
 char **STListToArgArr(st_list *head)
 {

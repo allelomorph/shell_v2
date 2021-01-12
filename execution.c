@@ -1,21 +1,33 @@
 #include "holberton.h"
 
-/* open */
+/* wait */
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-/* wait (+sys/types) */
 #include <sys/wait.h>
 
-/* fork execve _exit isatty dup2 pipe write */
+/* fork execve _exit wait */
 #include <unistd.h>
 
-/* free malloc exit */
+/* free */
 #include <stdlib.h>
 
+/* perror fprintf */
+#include <stdio.h>
 
+/* forkProcess: std: fork perror fprintf free execve _exit wait */
 
+/* executeCommands: std: fprintf */
+/* executeCommands: sub: _strcmp assignIORedirects checkBuiltins */
+/* _which forkProcess restoreStdFDs */
+/**
+ * executeCommands - works through a cmd_list in order, skipping commands
+ * per sequence operators, and calling subroutines to check if command is
+ * builtin and set up any needed I/O redirection
+ *
+ * @head: 
+ * @line: 
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 void executeCommands(cmd_list *head, char *line, sh_state *state)
 {
 	cmd_list *temp = NULL;
@@ -32,10 +44,6 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 
 	while (temp)
 	{
-/*
-		printf("\texecuteCommands: handling cmd @ %p:\n", (void *)temp);
-		testPrSTList(temp->s_tokens);
-*/
 		/* check if need to skip current command */
 		if ((temp->seq_op == ST_ONSCCS && state->exit_code != 0) ||
 		    (temp->seq_op == ST_ONFAIL && state->exit_code == 0))
@@ -52,16 +60,26 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 		}
 	        else
 			restoreStdFDs(state);
-/*
-		printf("\texecuteCommands7\n");
-*/
 		temp = temp->next;
 	}
 }
 
 
-
-void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path, char *line, sh_state *state)
+/* forkProcess: std: fork perror fprintf free execve _exit wait */
+/* forkProcess: sub: STListToArgArr StrArrFromKVList strArrFree */
+/* restoreStdFDs freeCmdList freeShellState */
+/**
+ * forkProcess - once line has been fully lexed and parsed, forkProcess
+ * manages the creation of a child process to the shell to execute the command
+ *
+ * @cmd: 
+ * @cmd_head: 
+ * @cmd_path: 
+ * @line: 
+ * @state: struct containing information needed globally by most functions
+ */
+void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path,
+		 char *line, sh_state *state)
 {
 	char **args = NULL, **env = NULL;
 	int status;

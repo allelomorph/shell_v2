@@ -21,12 +21,22 @@
 
 #include <errno.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 /* C standard library global variables */
 /* extern int errno;  deprecated for `#include <errno.h>` */
 /* extern char **environ; not used since we need a manipulable copy */
 
-/* used for envrionment, shell variables and aliases */
+/**
+ * struct kv_list_s - SLL node of key-value pairs
+ * @key: lookup string
+ * @value: corresponding data string
+ * @next: pointer to next node in list
+ *
+ * Description: very simple approximation of a dictionary structure to
+ * store key-value pairs in a singly linked list; used for variables and
+ * aliases
+ */
 typedef struct kv_list_s
 {
 	char *key;
@@ -34,28 +44,60 @@ typedef struct kv_list_s
 	struct kv_list_s *next;
 } kv_list;
 
-/* syntax token list */
-/* used for lexing */
+/**
+ * struct st_list_s - SLL node of a syntax token
+ * @token: substring of user input, once stripped of delimiters
+ * @p_op: "preceding operator," syntax operator found to left of token
+ * @next: pointer to next node in list
+ *
+ * Description: used during lexing to provide a flexible structure for syntax
+ * tokens derived from subdividing by delimiters
+ */
 typedef struct st_list_s
 {
 	char *token;
-        size_t p_op;  /* "preceding operator" syntax operator to left of token */
+	size_t p_op;
 	struct st_list_s *next;
 } st_list;
 
-/* command list */
-/* used for parsing and execution */
+
+/**
+ * struct cmd_list_s - SLL node of a command list
+ * @s_tokens: list of syntax tokens relevant to this command
+ * @input_fd: -1 by default, or file descriptor to map onto stdin
+ * @output_fd: -1 by default, or file descriptor to map onto stdout
+ * @seq_op: "sequence operator," uses same macros as st_list_s->p_op, indicates
+ * under which conditions the next command in the list will be executed
+ * @next: pointer to next node in list
+ *
+ * Description: used during parsing and execution to package all information
+ * neccessary to execute a command in context
+ */
 typedef struct cmd_list_s
 {
-        st_list *s_tokens; /* command syntax tokens */
-	int input_fd; /* both for pipes and single redirs */
-	int output_fd; /* both for pipes and single redirs */
-	int seq_op; /* ST_NONE ST_CMD_BRK ST_ONSCCS ST_ONFAIL or ST_PIPE (determines how to screen retval of previous command)*/
+	st_list *s_tokens;
+	int input_fd;
+	int output_fd;
+	int seq_op;
 	struct cmd_list_s *next;
 } cmd_list;
 
 /**
- * information needed globally by most subroutines
+ * struct sh_state_s - information needed globally by most subroutines
+ * @exec_name: name of shell executable
+ * @scrp_name: name of main(argv[1]) script
+ * @loop_count: amount of lines entered and fully lexed and parsed
+ * @exit_code: exit code/return value of last child/builtin/fail condition
+ * @env_vars: env inherited from shell parent converted to kv_list
+ * @child_stdin_bup: -1 by default, or backup of input fd before a command
+ * @child_stdout_bup: -1 by default, or backup of output fd before a command
+ * @stdin_bup: -1 by default, or fd of stdin before execution of script
+ * @init_fd: -1 by default, or fd of ~/.hshrc script
+ * @arg_fd: -1 by default, or fd of main(argv[1]) script
+ *
+ * Description: used to hold anyhting that needs to be globally visible to
+ * various functions to ensure consistent error messages, storage access,
+ * and fd management
  */
 typedef struct sh_state_s
 {
@@ -64,19 +106,15 @@ typedef struct sh_state_s
 	unsigned int loop_count;
 	int exit_code;
 	kv_list *env_vars;
-/*
-	kv_list *sh_vars;
-	kv_list *aliases;
-*/
-/*
-	char **env_var_copies; * of variable values for lexing by whtspc *
-	char **alias_copies; * of expanded alias values for full lexing *
-*/
+	/* kv_list *sh_vars; */
+	/* kv_list *aliases; */
+	/* char **env_var_copies; * of variable values for lexing by whtspc */
+	/* char **alias_copies; * of expanded alias values for full lexing */
 	int child_stdin_bup;
 	int child_stdout_bup;
-	int stdin_bup; /* if running script or file arg to main, -1 default */
-	int init_fd; /* ~/.hshrc script */
-	int arg_fd; /* main(argv[1]) script */
+	int stdin_bup;
+	int init_fd;
+	int arg_fd;
 
 } sh_state;
 

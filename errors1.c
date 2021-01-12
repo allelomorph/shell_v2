@@ -6,10 +6,12 @@
 
 /* cmdNotFoundErr: std: fprintf */
 /* cmdNotFoundErr: sub: (none) */
-
-
-/* cmdNotFoundErr: std: fprintf */
-/* cmdNotFoundErr: sub: (none) */
+/**
+ * cmdNotFoundErr - prints sh-styled error messages for invalid commands
+ *
+ * @cmd: attempted command name
+ * @state: struct containing information needed globally by most functions
+ */
 void cmdNotFoundErr(char *cmd, sh_state *state)
 {
 	char *script_n = NULL;
@@ -39,6 +41,14 @@ void cmdNotFoundErr(char *cmd, sh_state *state)
 }
 
 
+/* syntaxErr: std: fprintf */
+/* syntaxErr: sub: (none) */
+/**
+ * syntaxErr - prints sh-styled error messages for syntax errors
+ *
+ * @bad_op: operator string not expected by shell syntax
+ * @state: struct containing information needed globally by most functions
+ */
 void syntaxErr(char *bad_op, sh_state *state)
 {
 	char *script_n = NULL;
@@ -68,8 +78,16 @@ void syntaxErr(char *bad_op, sh_state *state)
 }
 
 
-
-/* workaround to produce ";;" error as sh does - lineLexer sees adjacent semicolons as the same as ";whtspc;" */
+/* dblSemicolonErr: std: fprintf */
+/* dblSemicolonErr: sub: syntaxErr */
+/**
+ * dblSemicolonErr - workaround to produce ";;" error as sh does - lineLexer
+ * sees adjacent semicolons as the same as ";<whitespace>;"
+ *
+ * @line: buffer containing user input for this REPL cycle
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int dblSemicolonErr(char *line, sh_state *state)
 {
 	int i;
@@ -94,5 +112,3 @@ int dblSemicolonErr(char *line, sh_state *state)
 
 	return (0);
 }
-
-

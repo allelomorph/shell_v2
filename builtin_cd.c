@@ -1,34 +1,24 @@
 #include "holberton.h"
 
-/* printf fprintf perror*/
+/* fprintf sprintf perror printf */
 #include <stdio.h>
 
-/* atoi exit free */
+/* free */
 #include <stdlib.h>
 
-/* getcwd chdir */
+/* getcwd chdir access */
 #include <unistd.h>
 
 
-/* _env: std: printf */
-/* _env: sub: (none) */
-/* __exit: std: atoi exit fprintf free */
-/* __exit: sub: freeShellState */
-/* _setenv: std: free fprintf */
-/* _setenv: sub: getKVPair _strdup addKVPair */
-/* _unsetenv: std: (none) */
-/* _unsetenv: sub: getKVPair removeKVPair */
-
 /* checkPWD: std: getcwd perror fprintf */
 /* checkPWD: sub: getKVPair addKVPair */
-/* changeDir: std: chdir fprintf */
-/* changeDir: sub: _setenv */
-/* _cd: std: printf */
-/* _cd: sub: getKVPair checkPWD _setenv changeDir */
-
-/* checkPWD: std: getcwd perror fprintf */
-/* checkPWD: sub: getKVPair addKVPair */
-/* helper to _cd */
+/**
+ * checkPWD - helper to _cd, retrieves PWD key-value pair, setting it again
+ * if missing previously
+ *
+ * @state: struct containing information needed globally by most functions
+ * Return: kv_list node for PWD, or NULL on failure
+ */
 kv_list *checkPWD(sh_state *state)
 {
 	kv_list *pwd;
@@ -39,7 +29,8 @@ kv_list *checkPWD(sh_state *state)
 	if (!pwd || !(pwd->value))
 	{
 		/* POSIX-1.2001: getcwd allocates own (sized) buffer */
-		if ((getcwd_buf = getcwd(NULL, 0)) == NULL)
+		getcwd_buf = getcwd(NULL, 0);
+		if (!getcwd_buf)
 		{
 			perror("checkPWD: getcwd error");
 			return (NULL);
@@ -49,7 +40,7 @@ kv_list *checkPWD(sh_state *state)
 			pwd->value = getcwd_buf;
 		else
 		{
-		        pwd = addKVPair(&(state->env_vars), "PWD", getcwd_buf);
+			pwd = addKVPair(&(state->env_vars), "PWD", getcwd_buf);
 			if (!pwd)
 			{
 				fprintf(stderr,
@@ -63,11 +54,21 @@ kv_list *checkPWD(sh_state *state)
 }
 
 
-/* !!! ~ should be treated as a variable expansion in lexer, not specially here */
-/* changeDir: std: chdir fprintf */
-/* changeDir: sub: _setenv */
-/* helper to _cd */
-int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state *state)
+/* ~ should be treated as a variable expansion in lexer, not here */
+/* changeDir: std: access chdir printf free */
+/* changeDir: sub: _strcmp _setenv cantCdToErr */
+/**
+ * changeDir - helper to _cd, changes to a new working directory
+ *
+ * @pwd: key-value pair for PWD env variable
+ * @oldpwd: key-value pair for OLDPWD env variable
+ * @cd_arg: command line argument to cd in shell
+ * @state: struct containing information needed globally by most functions
+ * @dest: directory path _cd is attempting to access
+ * Return: 0 on success, 2 on failure
+ */
+int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
+	      char *dest, sh_state *state)
 {
 	/* dest and pwd both not NULL, we need to swap into new dir */
 	if (access(dest, F_OK | X_OK) == 0 && chdir(dest) == 0)
@@ -81,7 +82,7 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 			/* avoids setting PWD to a OLDPWD freed by _setenv */
 			dest = _strdup(dest);
 		}
-/* _setenv dups its value arg */
+		/* _setenv dups its value arg */
 		_setenv("OLDPWD", pwd->value, state);
 		_setenv("PWD", dest, state);
 
@@ -100,9 +101,17 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state 
 }
 
 
-/* _cd: std: printf */
-/* _cd: sub: getKVPair checkPWD _setenv changeDir */
 /* ~ handling will be done by lexer (with vars) before builtins are executed */
+/* _cd: std: malloc fprintf sprintf */
+/* _cd: sub: getKVPair checkPWD _setenv _strlen changeDir */
+/**
+ * _cd - moves to a new working directory, based on the supplied args and
+ * state of the HOME, OLDPWD, and PWD environmental variables
+ *
+ * @dir_name: string passed as arg to `cd` builtin in shell
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int _cd(char *dir_name, sh_state *state)
 {
 	kv_list *home = NULL, *pwd = NULL, *oldpwd = NULL;
@@ -122,7 +131,7 @@ int _cd(char *dir_name, sh_state *state)
 	}
 	else if (_strcmp(dir_name, "-") == 0)
 	{
-/* !!! some kind of validator for OLDPWD value? sh won't set it unless it's accessible */
+/* !!! need validator for OLDPWD value? sh won't set it unless accessible */
 		if (oldpwd && oldpwd->value)
 			dest = oldpwd->value;
 		else

@@ -4,6 +4,15 @@
 #include <stdio.h>
 
 
+/* cantOpenScriptErr: std: fprintf */
+/* cantOpenScriptErr: sub: (none) */
+/**
+ * cantOpenScriptErr - prints sh-styled error messages inaccessible shell
+ * scripts, errno should be set by open() before calling this function
+ *
+ * @filename: name of shell script
+ * @state: struct containing information needed globally by most functions
+ */
 void cantOpenScriptErr(char *filename, sh_state *state)
 {
 	if (!filename || !state)
@@ -19,6 +28,15 @@ void cantOpenScriptErr(char *filename, sh_state *state)
 }
 
 
+/* cantOpenFileErr: std: fprintf */
+/* cantOpenFileErr: sub: (none) */
+/**
+ * cantOpenFileErr - prints sh-styled error messages for inaccessible files,
+ * errno should be set by open() before calling this function
+ *
+ * @filename: name of file
+ * @state: struct containing information needed globally by most functions
+ */
 void cantOpenFileErr(char *filename, sh_state *state)
 {
 	char *script_n = NULL;
@@ -56,6 +74,14 @@ void cantOpenFileErr(char *filename, sh_state *state)
 }
 
 
+/* cantCdToErr: std: fprintf */
+/* cantCdToErr: sub: (none) */
+/**
+ * cantCdToErr - prints sh-styled error messages for inaccessible directories
+ *
+ * @dirname: name of directory
+ * @state: struct containing information needed globally by most functions
+ */
 void cantCdToErr(char *dirname, sh_state *state)
 {
 	char *script_n = NULL;
@@ -72,7 +98,7 @@ void cantCdToErr(char *dirname, sh_state *state)
 			"~/.hshrc" : state->scrp_name;
 
 		fprintf(stderr, "%s: %u: cd: can't cd to %s\n",
-		        script_n, state->loop_count, dirname);
+			script_n, state->loop_count, dirname);
 	}
 	else
 	{
@@ -81,5 +107,5 @@ void cantCdToErr(char *dirname, sh_state *state)
 	}
 
 	/* state->exit_code not set here as it will be set by return values: */
-	/* changeDir to _cd to checkBuiltins */
+	/* changeDir returns to _cd returns to checkBuiltins */
 }

@@ -1,20 +1,19 @@
 #include "holberton.h"
 
-/* open */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-/* wait (+sys/types) */
-#include <sys/wait.h>
-
-/* fork execve _exit isatty dup2 pipe write */
+/* close dup2 */
 #include <unistd.h>
 
-/* free malloc exit */
-#include <stdlib.h>
+/* fprintf perror */
+#include <stdio.h>
 
 
+/* restoreStdFDs: std:  */
+/* restoreStdFDs: sub:  */
+/**
+ * restoreStdFDs -
+ *
+ * @state: struct containing information needed globally by most functions
+ */
 void restoreStdFDs(sh_state *state)
 {
 	if (!state)
@@ -23,7 +22,7 @@ void restoreStdFDs(sh_state *state)
 		return;
 	}
 
-        if (state->child_stdin_bup != -1)
+	if (state->child_stdin_bup != -1)
 	{
 		/* restore stdin to default before child process */
 		if (dup2(state->child_stdin_bup, STDIN_FILENO) == -1)
@@ -39,7 +38,7 @@ void restoreStdFDs(sh_state *state)
 		state->child_stdin_bup = -1;
 	}
 
-        if (state->child_stdout_bup != -1)
+	if (state->child_stdout_bup != -1)
 	{
 		/* restore stdout to default before child process */
 		if (dup2(state->child_stdout_bup, STDOUT_FILENO) == -1)
@@ -57,6 +56,14 @@ void restoreStdFDs(sh_state *state)
 }
 
 
+/* setInputFD: std:  */
+/* setInputFD: sub:  */
+/**
+ * setInputFD -
+ *
+ * @cmd:
+ * @state: struct containing information needed globally by most functions
+ */
 void setInputFD(cmd_list *cmd, sh_state *state)
 {
 	if (!cmd || !state)
@@ -94,6 +101,14 @@ void setInputFD(cmd_list *cmd, sh_state *state)
 }
 
 
+/* setOutputFD: std:  */
+/* setOutputFD: sub:  */
+/**
+ * setOutputFD -
+ *
+ * @cmd:
+ * @state: struct containing information needed globally by most functions
+ */
 void setOutputFD(cmd_list *cmd, sh_state *state)
 {
 	if (!cmd || !state)
@@ -129,4 +144,3 @@ void setOutputFD(cmd_list *cmd, sh_state *state)
 		}
 	}
 }
-
