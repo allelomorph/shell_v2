@@ -14,72 +14,6 @@
 /* main: sub: initShellState checkInitScript checkArgScript shellLoop freeShellState */
 
 
-/* shellLoop: std: free */
-/* shellLoop: sub: setScriptFds _readline unsetScriptFds countTokens tokenize checkBuiltins runCommand */
-/**
- * shellLoop - primary user input loop, driven by loop_help functions.
- * takes user input stream from stdin and converts it to strings containing
- * arguments, to execute in the environment
- * Return: 0 on success, -1 on failure
- */
-void shellLoop(sh_state *state)
-{
-	char *line = NULL;
-	st_list *s_tokens = NULL;
-	cmd_list *commands = NULL;
-	bool init_EOF;
-
-	state->loop_count = 1;
-	do {
-		if (!line)
-			setScriptFds(state);
-		init_EOF = false;
-/*
-		printf("\tshellLoop: setScriptFds done\n");
-		*/
-		if ((line = _readline(true, state)) == NULL)
-			init_EOF = unsetScriptFds(state);
-
-		/* screen for ";;" error on raw line to mimic sh */
-		if (dblSemicolonErr(line, state) == 0 &&
-		    (s_tokens = lineLexer(line, state)) != NULL &&
-		    validateSyntax(s_tokens, state) == 0)
-		{
-			/* count only increments after no syntax error */
-			if (state->loop_count != 1)
-				state->loop_count++;
-
-			commands = STListToCmdList(s_tokens, state);
-/*
-			printf("shellLoop: commands found:\n");
-			testPrintCmdList(commands);
-*/
-			executeCommands(commands, line, state);
-
-		}
-
-/* !!! experiment with freeing line just before _readline */
-		if (commands)
-			freeCmdList(&commands);
-		if (line)
-			free(line);
-		/* freed pointers will not automatically == NULL */
-	} while (line || init_EOF);
-/*
-	printf("\tshellLoop: out of loop\n");
-*/
-}
-
-
-/* is there a better test for the end of the loop ? most exits are handled inside _readline */
-/* end of loop could happen from:
-   1- EOF reached in script arg or when bash redirects into hsh
-   2- user enters ctrl+d
-   3- user enters exit
-   4- fatal errors (? most errors just print error and keep looping)
-*/
-
-
 
 /* initShellState: std: (none) */
 /* initShellState: sub: KVListFromStrArr */
@@ -106,13 +40,14 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 	state->sh_vars = sh_vars;
 	state->aliases = NULL;
 	*/
-/* !!! still unused? */
-	state->commands = NULL;
-
+	/*
+        state->env_var_copies = NULL;
+	state->alias_copies = NULL;
+	*/
 	/* -1 serves as NULL state for fds here */
 	state->child_stdin_bup = -1;
 	state->child_stdout_bup = -1;
-	state->stdinfd_bup = -1;
+	state->stdin_bup = -1;
 	state->init_fd = -1;
 	state->arg_fd = -1;
 
@@ -140,12 +75,8 @@ void freeShellState(sh_state *state)
 	if (state->aliases)
 		freeKVList(&(state->aliases));
 	*/
-/*
-	if (state->commands)
-	        freeCmdList(&(state->commands));
-*/
 	/*
-	if (state->var_copies)
+	if (state->env_var_copies)
 		strArrFree(state->var_copies);
 
 	if (state->alias_copies)

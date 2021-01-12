@@ -222,17 +222,3 @@ void strArrFree(char **array)
 }
 
 
-
-
-
-/* !!! for testing only */
-void prStrArrInLine(char **str_arr)
-{
-        char **temp = str_arr;
-	int i;
-
-	for (i = 0; temp[i]; i++)
-	{
-		printf("'%s' ", temp[i]);
-	}
-}

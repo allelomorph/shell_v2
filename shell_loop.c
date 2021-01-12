@@ -24,6 +24,72 @@
 /* checkBuiltins: sub: _env __exit _setenv _unsetenv _cd */
 
 
+/* shellLoop: std: free */
+/* shellLoop: sub: setScriptFds _readline unsetScriptFds countTokens tokenize checkBuiltins runCommand */
+/**
+ * shellLoop - primary user input loop, driven by loop_help functions.
+ * takes user input stream from stdin and converts it to strings containing
+ * arguments, to execute in the environment
+ * Return: 0 on success, -1 on failure
+ */
+void shellLoop(sh_state *state)
+{
+	char *line = NULL;
+	st_list *s_tokens = NULL;
+	cmd_list *commands = NULL;
+	bool init_EOF;
+
+	state->loop_count = 1;
+	do {
+		if (!line)
+			setScriptFds(state);
+		init_EOF = false;
+
+		if ((line = _readline(true, state)) == NULL)
+			init_EOF = unsetScriptFds(state);
+
+		/* screen for ";;" error on raw line to mimic sh */
+		if (dblSemicolonErr(line, state) == 0 &&
+		    (s_tokens = lineLexer(line, state)) != NULL &&
+		    validateSyntax(s_tokens, state) == 0)
+		{
+			/* count only increments after no syntax error */
+			if (state->loop_count != 1)
+				state->loop_count++;
+			commands = STListToCmdList(s_tokens, state);
+			executeCommands(commands, line, state);
+		}
+
+		if (commands)
+			freeCmdList(&commands);
+		if (line)
+			free(line);
+		/* freed pointers will not automatically == NULL */
+	} while (line || init_EOF);
+}
+
+/*
+		printf("\tshellLoop: setScriptFds done\n");
+		*/
+/*
+			printf("shellLoop: commands found:\n");
+			testPrintCmdList(commands);
+*/
+/*
+	printf("\tshellLoop: out of loop\n");
+*/
+
+/* is there a better test for the end of the loop ? most exits are handled inside _readline */
+/* end of loop could happen from:
+   1- EOF reached in script arg or when bash redirects into hsh
+   2- user enters ctrl+d
+   3- user enters exit
+   4- fatal errors (? most errors just print error and keep looping)
+*/
+
+
+
+
 /* _readline: std: isatty printf perror getline free */
 /* _readline: sub: (none) */
 char *_readline(bool PS1, sh_state *state)
