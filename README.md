@@ -1,38 +1,39 @@
 # Cascara
-Cascara is a simple command line interpreter written in C, built to primarily emulate the version of sh pakcaged with Ubuntu 14.04 LTS, aka dash or the Debian Almquist Shell. Some features from bash are also included.
+Cascara is a simple command line interpreter written in C, built to primarily emulate the version of sh packaged with Ubuntu 14.04 LTS, aka dash or the Debian Almquist Shell. Some features from bash are also included.
 
 ## Development
 Versions 0.2-1.0 were built as a team student project between Samuel Pomeroy and Cynthia Taylor as the final project in a semester of introductory C programming. The shell at that time had no lexing beyond delimiting tokens by whitespace, and could not handle any sequence or redirection operators.
 
-This version 2.0 was developed alone by Samuel Pomeroy early in his second year of instruction after entering the Low Level and System Algorithm specialization. The assignment takes the core REPL from the previous iteration and adds the need to handle file descriptors for I/O redirection, logcial sequence operators to direct execution of following commands based on the exit code of the previous, and command sequence breaks, plus several other optional addtions.
+This version 2.0 was developed alone by Samuel Pomeroy early in his second year of studies after entering the Low Level and System Algorithm specialization. The assignment takes the core REPL from the previous iteration and adds the need to handle file descriptors for I/O redirection, logcial sequence operators to direct execution of following commands based on the exit code of the previous, and command sequence breaks, plus several other optional addtions.
 
-First the REPL from version 1.0 was refactored to clean out waste and improve the core functionality. Then several new data structres were introduced to allow for flexibility in the task of lexing more complex syntax that could include mulitple commands within a command line, and potentially also variable and alias expansion. Several design decisions were influenced by the restrictions of the the assignment: for example, global variables were forbidden, so insetad a data structure containing the shell "state" was implemented. At several points subroutines are split off some what arbitrarily due to the style guide mandating functions of 40 lines or less. 
+First the REPL from version 1.0 was refactored to clean out waste and improve the core functionality. Then several new data structres were introduced to allow for flexibility in the task of lexing more complex syntax that could include mulitple commands within a command line, and potentially also variable and alias expansion. Some design decisions were influenced by the restrictions of the the assignment: for example, global variables were forbidden, so insetad a data structure containing the shell "state" was implemented. Also, at several points subroutines are split off some what arbitrarily due to the style guide mandating functions of 40 lines or less. 
 
 ## Installation
 Cascara 2.0 can be cloned from the GitHub repository [shell_v2](https://github.com/allelomorph/shell_v2)
 
 ## Compilation
-A Makefile is included, so if you have `make` or a compatible program, you can simply enter
+A Makefile is included, so if you have `make` or a compatible program, while in the cloned repository it will be automated with:
 ```c
 make
 ```
-in the cloned repository. If you wish to compile manually, it can be done with
+If you wish to compile manually, it can be done with:
 ```c
 gcc -Wall -Werror -Wextra -pedantic *.c *.h -o hsh
 ```
 
 ## Use
-To use in interactive REPL mode, simply lauch the executable with
+To use in interactive REPL mode, simply lauch the executable with:
 ```c
 ./hsh
 ```
 Interactive mode can be exited with either `exit` or ctrl + d.
 
-The shell can also be run non-interactively by either piping in commands via the parent shell
+
+The shell can also be run non-interactively by either piping in commands via the parent shell:
 ```c
 echo "<commands>" | ./hsh
 ```
-or by passing a script as an argument
+or by passing a script as an argument:
 
 ```c
 ./hsh <scriptname>
