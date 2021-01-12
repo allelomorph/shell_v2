@@ -1,38 +1,18 @@
 #include "holberton.h"
 
-/* printf fprintf perror*/
+/* fprintf */
 #include <stdio.h>
 
-/* atoi exit free */
+/* exit free */
 #include <stdlib.h>
-
-/* getcwd chdir */
-#include <unistd.h>
-
-
-/* _env: std: printf */
-/* _env: sub: (none) */
-/* __exit: std: atoi exit fprintf free */
-/* __exit: sub: freeShellState */
-/* _setenv: std: free fprintf */
-/* _setenv: sub: getKVPair _strdup addKVPair */
-/* _unsetenv: std: (none) */
-/* _unsetenv: sub: getKVPair removeKVPair */
-
-/* checkPWD: std: getcwd perror fprintf */
-/* checkPWD: sub: getKVPair addKVPair */
-/* changeDir: std: chdir fprintf */
-/* changeDir: sub: _setenv */
-/* _cd: std: printf */
-/* _cd: sub: getKVPair checkPWD _setenv changeDir */
 
 
 /* _env: std: printf */
 /* _env: sub: (none) */
 /**
- * _env - prints all environmental (exported) variables for calling process
- * (stock env also takes variables as args, to set values)
- * @my_env: array of strings containing environmental variables
+ * _env - prints all environmental variables inherited from shell parent
+ *
+ * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on fail
  */
 int _env(sh_state *state)
@@ -56,10 +36,18 @@ int _env(sh_state *state)
 }
 
 
-/* __exit: std: atoi exit fprintf free */
-/* __exit: sub: freeShellState */
-/* !!! needs other allocated memory besides state (line) to free before exit */
-/* or, it can set a flag to be seen by shellLoop to exit and free via main return path */
+/* __exit: std: fprintf free exit */
+/* __exit: sub: _atoi strictAtoiCheck freeCmdList freeShellState */
+/**
+ * __exit - exits shell, equivalent to EOF, but can be given an argument
+ * to set the exit code
+ *
+ * @code: exit code arg to exit in command line
+ * @line: buffer containing current command line
+ * @cmd_head: head of SLL of current commands
+ * @state: struct containing information needed globally by most functions
+ * Return: User determined, 0 by default, or 2 on failure
+ */
 void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state)
 {
 	int e_code;
@@ -82,18 +70,24 @@ void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state)
 	else
 		e_code = state->exit_code;
 
-/* !!! is there a more elegant way to bring in tokens and line for freeing? maybe in state? */
-/* wait for CMD struct refactor */
 	free(line);
 	freeCmdList(&cmd_head);
 	freeShellState(state);
 	exit(e_code);
 }
 
+
 /* _setenv: std: free fprintf */
 /* _setenv: sub: getKVPair _strdup addKVPair */
-/* maybe this could be genrealized to setValueForKey() to use with aliases and shell vars */
-/* task says that _setenv and _unsetenv should "print something on error", but that is not shown by v1 checker */
+/**
+ * _setenv - updates the value of a varaible from the shell environment,
+ * or sets a new one if missing
+ *
+ * @var: variable name arg to setenv in command line
+ * @value: variable value arg to setenv in command line
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 2 on fail
+ */
 int _setenv(char *var, char *value, sh_state *state)
 {
 	kv_list *temp = NULL;
@@ -135,9 +129,16 @@ int _setenv(char *var, char *value, sh_state *state)
 	return (0);
 }
 
-/* _unsetenv: std: (none) */
-/* _unsetenv: sub: getKVPair removeKVPair */
-/* maybe this could be genrealized to unsetKey() to use with aliases and shell vars */
+
+/* _unsetenv: std: fprintf */
+/* _unsetenv: sub: removeKVPair */
+/**
+ * _unsetenv - unsets/removes a varaible from the shell environment
+ *
+ * @var: variable name arg to unsetenv in command line
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 2 on fail
+ */
 int _unsetenv(char *var, sh_state *state)
 {
 	if (!state)
@@ -152,125 +153,4 @@ int _unsetenv(char *var, sh_state *state)
 	removeKVPair(&(state->env_vars), var);
 
 	return (0);
-}
-
-
-/* checkPWD: std: getcwd perror fprintf */
-/* checkPWD: sub: getKVPair addKVPair */
-/* helper to _cd */
-kv_list *checkPWD(sh_state *state)
-{
-	kv_list *pwd;
-	char *getcwd_buf = NULL;
-
-	pwd = getKVPair(state->env_vars, "PWD");
-
-	if (!pwd || !(pwd->value))
-	{
-		/* POSIX-1.2001: getcwd allocates own (sized) buffer */
-		if ((getcwd_buf = getcwd(NULL, 0)) == NULL)
-		{
-			perror("checkPWD: getcwd error");
-			return (NULL);
-		}
-
-		if (pwd)
-			pwd->value = getcwd_buf;
-		else
-		{
-		        pwd = addKVPair(&(state->env_vars), "PWD", getcwd_buf);
-			if (!pwd)
-			{
-				fprintf(stderr,
-					"checkPWD: addKVPair failed\n");
-				return (NULL);
-			}
-		}
-	}
-
-	return (pwd);
-}
-
-
-/* !!! ~ should be treated as a variable expansion in lexer, not specially here */
-/* changeDir: std: chdir fprintf */
-/* changeDir: sub: _setenv */
-/* helper to _cd */
-int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg, char *dest, sh_state *state)
-{
-	/* dest and pwd both not NULL, we need to swap into new dir */
-	if (access(dest, F_OK | X_OK) == 0 && chdir(dest) == 0)
-	{
-		if (_strcmp(cd_arg, "-") == 0)
-		{
-			if (oldpwd->value)
-				printf("%s\n", oldpwd->value);
-			else
-				printf("%s\n", pwd->value);
-			/* avoids setting PWD to a OLDPWD freed by _setenv */
-			dest = _strdup(dest);
-		}
-/* _setenv dups its value arg */
-		_setenv("OLDPWD", pwd->value, state);
-		_setenv("PWD", dest, state);
-
-		/* two cases copy is made in addition to one from _setenv */
-		if (_strcmp(cd_arg, "-") == 0 || cd_arg[0] == '~')
-			free(dest);
-
-		return (0);
-	}
-
-	if (cd_arg[0] == '~')
-		free(dest);
-
-	cantCdToErr(cd_arg, state);
-	return (2);
-}
-
-
-/* _cd: std: printf */
-/* _cd: sub: getKVPair checkPWD _setenv changeDir */
-/* ~ handling will be done by lexer (with vars) before builtins are executed */
-int _cd(char *dir_name, sh_state *state)
-{
-	kv_list *home = NULL, *pwd = NULL, *oldpwd = NULL;
-	char *dest = NULL;
-	int dest_len = 0;
-
-	home = getKVPair(state->env_vars, "HOME");
-	oldpwd = getKVPair(state->env_vars, "OLDPWD");
-	pwd = checkPWD(state);
-
-	if (dir_name == NULL || dir_name[0] == '\0')
-	{
-		if (home && home->value)
-			dest = home->value;
-		else
-			return (_setenv("OLDPWD", pwd->value, state));
-	}
-	else if (_strcmp(dir_name, "-") == 0)
-	{
-/* !!! some kind of validator for OLDPWD value? sh won't set it unless it's accessible */
-		if (oldpwd && oldpwd->value)
-			dest = oldpwd->value;
-		else
-			return (_setenv("OLDPWD", pwd->value, state));
-	}
-	else if (dir_name[0] == '~' && home && home->value)
-	{
-		dest_len = (_strlen(dir_name + 1) + _strlen(home->value));
-		dest = malloc(sizeof(char) * (dest_len + 1));
-		if (!dest)
-		{
-			fprintf(stderr, "_cd: malloc failure\n");
-			return (1);
-		}
-		sprintf(dest, "%s%s", home->value, dir_name + 1);
-		dest[dest_len] = '\0';
-	}
-	else /* arg present and not '-' */
-		dest = dir_name;
-
-	return (changeDir(pwd, oldpwd, dir_name, dest, state));
 }

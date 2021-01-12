@@ -9,13 +9,16 @@
 /* strtok */
 #include <string.h>
 
-/* trimComments: std: (none) */
-/* trimComments: sub: (none) */
-/* strtokSubstr: std: fprintf */
-/* strtokSubstr: sub: _strlen _strncmp */
 
-
-
+/* lineLexer: std: malloc fprintf */
+/* lineLexer: sub: trimComments lexByDelim lexByWhtSpc */
+/**
+ * lineLexer -
+ *
+ * @line:
+ * @state: struct containing information needed globally by most functions
+ * Return: , NULL on failure
+ */
 st_list *lineLexer(char *line, sh_state *state)
 {
 	st_list *head = NULL;
@@ -38,7 +41,7 @@ st_list *lineLexer(char *line, sh_state *state)
 	head->p_op = ST_NONE;
 	head->next = NULL;
 
-/* !!! can we make this a loop that calls enumerated array of args? */
+/* !!! can this be a loop that calls enumerated array of args? */
 	/* subdivide token list to record ; occurances */
 	lexByDelim(head, NULL, ";", ST_CMD_BRK);
 	/* subdivide token list to record && occurances */
@@ -66,20 +69,6 @@ st_list *lineLexer(char *line, sh_state *state)
 	return (head);
 }
 
-/*
-	char *p_ops[] = {
-		"ST_NONE",
-		"ST_CMD_BRK",
-		"ST_ONSCCS",
-		"ST_ONFAIL",
-		"ST_PIPE",
-		"ST_APPEND",
-		"ST_RD_OUT",
-		"ST_HEREDOC",
-		"ST_RD_IN",
-		"ST_MACRO_CT"
-	};
-*/
 
 
 #ifdef ZZZ
@@ -143,9 +132,15 @@ int varExpansion(st_list *head, sh_state *state)
 #endif
 
 
+/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
 /* trimComments: std: (none) */
 /* trimComments: sub: (none) */
-/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
+/**
+ * trimComments -
+ *
+ * @line:
+ * @whtsp:
+ */
 void trimComments(char *line, char *whtsp)
 {
 	int i, j;
@@ -177,6 +172,17 @@ void trimComments(char *line, char *whtsp)
 }
 
 
+/* lexByDelim: std: (none) */
+/* lexByDelim: sub: _strlen strtokSubstr */
+/**
+ * lexByDelim -
+ *
+ * @begin:
+ * @end:
+ * @delim:
+ * @p_op_code:
+ * Return: 0 on success, 1 on failure
+ */
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
@@ -227,6 +233,16 @@ int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 /* largely redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
 /* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
 /* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
+
+/* lexByDelim: std: (none) */
+/* lexByDelim: sub: _strlen strtokSubstr */
+/**
+ * lexByWhtSpc -
+ *
+ * @begin:
+ * @end:
+ * Return: 0 on success, 1 on failure
+ */
 int lexByWhtSpc(st_list *begin, st_list *end)
 {
 	st_list *curr = NULL, *temp = NULL, *new = NULL, *reentry = NULL;
@@ -278,56 +294,4 @@ int lexByWhtSpc(st_list *begin, st_list *end)
 			curr = curr->next;
 	}
 	return (0);
-}
-
-
-/* strtokSubstr: std: fprintf */
-/* strtokSubstr: sub: _strlen _strncmp */
-/* 2 differences with stock strtok:
-1- mulitchar delim arg treated as if entire string is one delim
-2- when delimter found at beginning of string, end of string, or
-two tokens are adjacent in the string, returns "" token instead of skipping.
-*/
-char *strtokSubstr(char *str, char *delim)
-{
-	static char *nextToken, *parseStr;
-	size_t i, delimLen, parseStrLen;
-
-	if (!delim || !delim[0])
-	{
-		fprintf(stderr, "strtokSubstr: missing delimiter\n");
-		return (NULL);
-	}
-	/* str != NULL starts parsing of new string */
-	/* testing (str[0] != '\0') prevents returning 1 token for empty str */
-	if (str && str[0])
-	{
-		parseStr = str;
-		nextToken = NULL;
-	}
-	else
-	{
-		if (!nextToken) /* previous save point already at final \0 */
-			return (NULL);
-		else /* still parsing previous string `str` */
-			parseStr = nextToken;
-	}
-	delimLen = _strlen(delim);
-	parseStrLen = _strlen(parseStr);
-	for (i = 0; parseStr[i]; i++)
-	{
-		if (parseStr[i] == delim[0])
-		{
-			if (parseStrLen >= i + delimLen &&
-			    (_strncmp(parseStr + i, delim, delimLen) == 0))
-			{
-			        nextToken = (parseStr + i + delimLen);
-				parseStr[i] = '\0';
-				break;
-			}
-		}
-	}
-	if (nextToken == parseStr) /* no more tokens, final valid return */
-		nextToken = NULL;
-	return (parseStr);
 }

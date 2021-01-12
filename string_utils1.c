@@ -6,19 +6,10 @@
 /* fprintf */
 #include <stdio.h>
 
-/* strictAtoiCheck: std: (none) */
-/* strictAtoiCheck: sub: (none) */
-/* _atoi: std: fprintf */
-/* _atoi: sub: (none) */
-/* strArrDup: std: malloc */
-/* strArrDup: sub: _strdup strArrFree */
-/* strArrFree: std: free */
-/* strArrFree: sub: (none) */
 
-
-/* strictAtoiCheck: std: (none) */
-/* strictAtoiCheck: sub: (none) */
 /* strictly disambiguates atoi output of 0: only "^[+/-]0*$" returns true */
+/* strictAtoiCheck: std: (none) */
+/* strictAtoiCheck: sub: (none) */
 bool strictAtoiCheck(char *str)
 {
         char *s = str;
@@ -55,13 +46,14 @@ bool strictAtoiCheck(char *str)
         return (is_int);
 }
 
+
 /* _atoi: std: fprintf */
 /* _atoi: sub: (none) */
 /* atoi compliance + NULL arg handling*/
 /**
  * _atoi - convert a string into an integer
- * @s  atoi:pointer to string
- * Return atoi:int that has been converted from a character string
+ * @str :pointer to string
+ * Return : int that has been converted from a character string
  */
 int _atoi(char *str)
 {
@@ -111,9 +103,10 @@ int _atoi(char *str)
  * manage over/underflow
  */
 /**
- * di_print - prints signed int as string when called by format tag in printf
- * @args: variable argument coming from _printf
- * Return: output length in bytes/chars
+ * _itoa -
+ *
+ * @n:
+ * Return: integer value written in string
  */
 char *_itoa(int n)
 {
@@ -163,6 +156,7 @@ char *_itoa(int n)
 /* strArrDup: sub: _strdup strArrFree */
 /**
  * strArrDup - copies array of strings into newly allocated memory
+ *
  * @array: array to be copied
  * Return: char double pointer to new array
  */
@@ -202,6 +196,7 @@ char **strArrDup(char **array)
 /* strArrFree: sub: (none) */
 /**
  * strArrFree - frees memory allocated to an array of char pointers
+ *
  * @array: array, or char double pointer to be freed
  */
 void strArrFree(char **array)
@@ -211,28 +206,8 @@ void strArrFree(char **array)
 	if (array)
 	{
 		for (i = 0; array[i]; i++)
-		{
-/*
-			printf("\t\t\tstrArrFree : freeing array[%i] @ %p\n", i, (void *)array[i]);
-*/
 			free(array[i]);
-		}
+
 		free(array);
-	}
-}
-
-
-
-
-
-/* !!! for testing only */
-void prStrArrInLine(char **str_arr)
-{
-        char **temp = str_arr;
-	int i;
-
-	for (i = 0; temp[i]; i++)
-	{
-		printf("'%s' ", temp[i]);
 	}
 }

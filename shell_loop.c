@@ -9,23 +9,61 @@
 /* free */
 #include <stdlib.h>
 
-/* wait */
-#include <sys/wait.h>
-#include <sys/types.h>
 
-/* strtok fp test */
-#include <string.h>
+/* shellLoop: std: free */
+/* shellLoop: sub: setScriptFds _readline unsetScriptFds dblSemicolonErr */
+/* lineLexer validateSyntax STListToCmdList executeCommands freeCmdList */
+/**
+ * shellLoop - primary REPL loop
+ *
+ * @state: struct containing information needed globally by most functions
+ */
+void shellLoop(sh_state *state)
+{
+	char *line = NULL;
+	st_list *s_tokens = NULL;
+	cmd_list *commands = NULL;
+	bool init_EOF;
+
+	state->loop_count = 1;
+	do {
+		if (!line)
+			setScriptFds(state);
+		init_EOF = false;
+
+		if ((line = _readline(true, state)) == NULL)
+			init_EOF = unsetScriptFds(state);
+
+		/* screen for ";;" error on raw line to mimic sh */
+		if (dblSemicolonErr(line, state) == 0 &&
+		    (s_tokens = lineLexer(line, state)) != NULL &&
+		    validateSyntax(s_tokens, state) == 0)
+		{
+			/* count only increments after no syntax error */
+			if (state->loop_count != 1)
+				state->loop_count++;
+			commands = STListToCmdList(s_tokens, state);
+			executeCommands(commands, line, state);
+		}
+
+		if (commands)
+			freeCmdList(&commands);
+		if (line)
+			free(line);
+		/* freed pointers will not automatically == NULL */
+	} while (line || init_EOF);
+}
+
 
 /* _readline: std: isatty printf perror getline free */
 /* _readline: sub: (none) */
-/* runCommand: std: fprintf fork perror execve free wait */
-/* runCommand: sub: _which cmdNotFoundErr StrArrFromKVList strArrFree freeShellState */
-/* checkBuiltins: std: fprintf */
-/* checkBuiltins: sub: _env __exit _setenv _unsetenv _cd */
-
-
-/* _readline: std: isatty printf perror getline free */
-/* _readline: sub: (none) */
+/**
+ * _readline -
+ *
+ * @PS1:
+ * @state: struct containing information needed globally by most functions
+ * Return: , NULL on failure
+ */
 char *_readline(bool PS1, sh_state *state)
 {
 	char *input = NULL;
@@ -40,7 +78,7 @@ char *_readline(bool PS1, sh_state *state)
 			printf("Cascara $ ");
 		else
 			printf("> "); /* PS2 */
-	        fflush(stdout);
+		fflush(stdout);
 	}
 	else if (errno != ENOTTY)
 	{
@@ -52,50 +90,37 @@ char *_readline(bool PS1, sh_state *state)
 	{ /* getline failure or EOF reached / ctrl+d entered by user */
 		if (input)
 			free(input);
-
 		if (errno == EINVAL)
 		{
 			perror("_readline: getline error");
 			state->exit_code = -1;
 			return (NULL);
 		}
-
 		if (tty) /* no errors, ctrl+d state */
 		        printf("\n"); /* final \n to exit prompt */
-
 		return (NULL); /* signal end of loop */
 	}
 	/* keep newlines for heredocs, remove for main prompt (PS1) */
 	if (PS1)
 		input[read_bytes - 1] = '\0';
-
 	return (input);
 }
 
 
 
-/* forkWaitFailCleanup */
-/* failed child needs to free: cmd_path, env, line, args and state */
 
-/* now returns exit code of child, or -1 on failure */
-/* edge case: any executables that complete normally in child, but return -1 themselves */
-
-/*
-      WIFEXITED(status)
-              returns true if the child terminated normally, that is, by calling exit(3) or _exit(2),
-              or by returning from main().
-
-       WEXITSTATUS(status)
-              returns the exit status of the child.  This consists of the least significant 8 bits of
-              the status argument that the child specified in a call to exit(3) or _exit(2) or as the
-              argument for a return statement in main().  This  macro  should  be  employed  only  if
-              WIFEXITED returned true.
-*/
+/* maybe add return value to indicate builtin found instead of arg builtin */
+/* !!! try to coordinate all builtins error handling and exiting through this function */
 
 /* checkBuiltins: std: fprintf */
 /* checkBuiltins: sub: _env __exit _setenv _unsetenv _cd */
-/* maybe add return value to indicate builtin found instead of arg builtin */
-/* !!! try to coordinate all builtins error handling and exiting through this function */
+/**
+ * checkBuiltins -
+ *
+ * @st_head:
+ * @line:
+ * Return:
+ */
 bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *state)
 {
 	bool builtin = true;
@@ -107,9 +132,7 @@ bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *s
 		fprintf(stderr, "checkBuiltins: missing arguments\n");
 		return (false);
 	}
-/*
-	printf("\t\tcheckBuiltins: builtin:%s args:%s %s\n", tokens[0], tokens[1], token_count >= 2 ? tokens[2] : NULL);
-*/
+
 	arg0 = st_head->token;
 	if (st_head->next)
 	{
@@ -141,9 +164,17 @@ bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *s
 }
 
 
-/* for now also omitting the special ";;" error sh gives for two consecutive semicolons - done in shellLoop now */
 /* bash and sh wait for secondary input when &&/||/| are followed by newline */
-/* "newline unepected" errors returned by sh after incrementing loop counter, done in assignIORedirects */
+/* "newline unepected" errors returned by sh after incrementing loop counter */
+/* validateSyntax: std: malloc fprintf sprintf */
+/* validateSyntax: sub: getKVPair checkPWD _setenv _strlen changeDir */
+/**
+ * validateSyntax -
+ *
+ * @head:
+ * @state: struct containing information needed globally by most functions
+ * Return: 0 on success, 1 on failure
+ */
 int validateSyntax(st_list *head, sh_state *state)
 {
 	st_list *temp = NULL;
@@ -155,32 +186,35 @@ int validateSyntax(st_list *head, sh_state *state)
 		fprintf(stderr, "validateSyntax: missing arguments\n");
 		return (1);
 	}
-
 	temp = head;
 	while (temp && !bad_op)
 	{
-	        if ((temp->token)[0] == '\0' && temp->next &&
-			 (temp->next->p_op >= ST_CMD_BRK &&
-			  temp->next->p_op <= ST_PIPE))
-			bad_op = err_ops[temp->next->p_op];
-		else if ((temp->token)[0] == '\0' &&
-			 (temp->p_op >= ST_ONSCCS && temp->p_op <= ST_PIPE) &&
-			 !(temp->next))
-			bad_op = "newline";
-		else if ((temp->token)[0] == '\0' &&
-			 (temp->p_op >= ST_APPEND && temp->p_op <= ST_RD_IN) &&
-			 temp->next &&
-			 (temp->next->p_op >= ST_APPEND &&
-			  temp->next->p_op <= ST_RD_IN))
-			bad_op = "redirection";
+	        if ((temp->token)[0] == '\0')
+		{
+			if (temp->next &&
+			    (temp->next->p_op >= ST_CMD_BRK &&
+			     temp->next->p_op <= ST_PIPE))
+				bad_op = err_ops[temp->next->p_op];
+			else if ((temp->p_op >= ST_ONSCCS &&
+				  temp->p_op <= ST_RD_IN) && !(temp->next))
+			{ /* sh: newline after redir advances loop count */
+				if ((temp->p_op >= ST_APPEND &&
+				     temp->p_op <= ST_RD_IN))
+				        state->loop_count++;
+				bad_op = "newline";
+			}
+			else if ((temp->p_op >= ST_APPEND &&
+				  temp->p_op <= ST_RD_IN) && temp->next &&
+				 (temp->next->p_op >= ST_APPEND &&
+				  temp->next->p_op <= ST_RD_IN))
+				bad_op = "redirection";
+		}
 		temp = temp->next;
 	}
-
 	if (bad_op)
 	{
 		syntaxErr(bad_op, state);
 		return (1);
 	}
-
 	return (0);
 }

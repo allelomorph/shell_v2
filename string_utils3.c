@@ -7,95 +7,12 @@
 #include <stdio.h>
 
 
-/* _strndup: std: malloc fprintf */
-/* _strndup: sub: _strlen */
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: _strlen */
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: (none) */
-/* _strcmp: std: (none) */
-/* _strcmp: sub: (none) */
-/* _strncmp: std: (none) */
-/* _strncmp: sub: (none) */
-/* _strlen: std: (none) */
-/* _strlen: sub: (none) */
-
-
-/* _strndup: std: malloc fprintf */
-/* _strndup: sub: _strlen */
-/* stock strndup + NULL arg protection */
-/**
- * _strndup - copies n bytes of string + terminating '\0' into newly allocated memory
- * @str: string to be copied
- * @n:
- * Return: char pointer to new string
- */
-char *_strndup(char *str, unsigned int n)
-{
-	unsigned int i, str_len, dup_len;
-	char *dup = NULL;
-
-/* !!! changed from (!str) when building varExpansion */
-	if (str == NULL)
-		return (NULL);
-
-	str_len = _strlen(str);
-        dup_len = (str_len < n) ? str_len : n;
-
-	dup = malloc(sizeof(char) * (dup_len + 1));
-	if (!dup)
-	{
-		fprintf(stderr, "_strdup: malloc failure\n");
-		return (NULL);
-	}
-
-	for (i = 0; i < dup_len; i++)
-		dup[i] = str[i];
-
-	dup[dup_len] = '\0';
-
-	return (dup);
-}
-
-
-/* _strdup: std: malloc fprintf */
-/* _strdup: sub: (none) */
-/**
- * _strdup - copies string into newly allocated memory, including '\0'
- * @str: string to be copied
- * Return: char pointer to new string
- */
-char *_strdup(char *str)
-{
-	int i, len;
-	char *dup = NULL;
-
-/* !!! changed from (!str) when building varExpansion */
-	if (str == NULL)
-		return (NULL);
-
-        len = _strlen(str);
-	dup = malloc(sizeof(char) * (len + 1));
-	if (!dup)
-	{
-		fprintf(stderr, "_strdup: malloc failure\n");
-		return (NULL);
-	}
-
-	for (i = 0; i < len; i++)
-		dup[i] = str[i];
-
-	dup[len] = '\0';
-
-	return (dup);
-}
-
-
 /* _strcmp: std: (none) */
 /* _strcmp: sub: (none) */
 /* added compliance with strcmp + NULL arg protection */
 /**
  * _strcmp - compares two strings
+ *
  * @s1: pointer to the first string
  * @s2: pointer to the second string
  * Return: the difference between the ASCII values of the first non-matching
@@ -131,10 +48,11 @@ int _strcmp(char *s1, char *s2)
 /* strncmp compliance + NULL protection */
 /**
  * _strncmp - compares a given amount of bytes between two strings
+ *
  * @str1: first string to compare
  * @str2: second string to compare
  * @n: number of bytes to compare
- * Return: 
+ * Return:
  */
 int _strncmp(char *s1, char *s2, unsigned int n)
 {
@@ -172,6 +90,7 @@ int _strncmp(char *s1, char *s2, unsigned int n)
 /* _strlen: sub: (none) */
 /**
  * _strlen - counts char bytes in a string, not inlcuding null byte
+ *
  * @s: string to be measured
  * Return: length of string
  */
@@ -191,6 +110,7 @@ unsigned int _strlen(char *s)
 
 /**
  * _strcat - concatenates two strings
+ *
  * @dest: string to have content added from str
  * @src: string to be read
  * Return: pointer to dest
