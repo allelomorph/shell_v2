@@ -4,7 +4,7 @@ Cascara is a simple command line interpreter written in C, built to primarily em
 ## Development
 Versions 0.2-1.0 were built as a team student project between Samuel Pomeroy and Cynthia Taylor as the final project in a semester of introductory C programming. The shell at that time had no lexing beyond delimiting tokens by whitespace, and could not handle any sequence or redirection operators.
 
-This version 2.0 was developed alone by Samuel Pomeroy early in his second year of studies after entering the Low Level and System Algorithm specialization. The assignment takes the core REPL from the previous iteration and adds the need to handle file descriptors for I/O redirection, logcial sequence operators to direct execution of following commands based on the exit code of the previous, and command sequence breaks, plus several other optional addtions.
+Version 2.0 was developed alone by Samuel Pomeroy early in his second year of studies after entering the Low Level and System Algorithm specialization. The assignment takes the core REPL from the previous iteration and adds the need to handle file descriptors for I/O redirection, logcial sequence operators to direct execution of commands based on the exit code of the previous, and command sequence breaks, plus several other optional additions.
 
 First the REPL from version 1.0 was refactored to clean out waste and improve the core functionality. Then several new data structres were introduced to allow for flexibility in the task of lexing a more complex syntax that could include mulitple commands within a command line, and potentially also variable and alias expansion. Some design decisions were influenced by the restrictions of the the assignment: for example, global variables were forbidden, so instead a data structure containing the shell "state" was implemented. Also, at several points subroutines are split off somewhat arbitrarily due to the style guide mandating functions of 40 lines or less. 
 
@@ -49,29 +49,29 @@ Cascara executable commands that can be found via the PATH, in addtion to severa
 
 ## Included Files
 
-| file 		| file contents   |
-| ------------- | ----------------------------------------------------------------------------------------- |
-| holberton.h	| Single header for entire build, contains all struct definitions and function declarations |
-| hsh.c		| Main and shell state init setup and teardown functions |
-| builtin_cd.c	| Builtin `cd` and its helper functions |
-| builtins.c 	| All other shell builtin functions |
-| cmd_lists.c	| Functions for handling command list structs |
-| errors1.c   	| Error return functions - mimics `sh` error messages and sets shell exit code |
-| errors2.c	| Error return functions - mimics `sh` error messages and sets shell exit code |
-| execution.c	| Functions that take fully lexed and parsed commands and set them in order by logical operators, and then fork into child processes to execute |
-| kv_lists1.c	| Key-value list functions to manage the dictionary approximating data structure used for env variables |
-| kv_lists2.c	| Key-value list functions to manage the dictionary approximating data structure used for env variables |
-| lexing.c	| The lexing function to break up raw user input lines into syntax tokens, and its helpers |
-| redirects1.c	| Functions that handle I/O redirections |
-| redirects2.c	| Functions that handle I/O redirections |
-| redirects3.c	| Functions that handle I/O redirections |
+| file 		  | file contents   |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| holberton.h	  | Single header for entire build, contains all struct definitions and function declarations |
+| hsh.c		  | Main and shell state init setup and teardown functions |
+| builtin_cd.c	  | Builtin `cd` and its helper functions |
+| builtins.c 	  | All other shell builtin functions |
+| cmd_lists.c	  | Functions for handling command list structs |
+| errors1.c   	  | Error return functions - mimics `sh` error messages and sets shell exit code |
+| errors2.c	  | Error return functions - mimics `sh` error messages and sets shell exit code |
+| execution.c	  | Functions that take fully lexed and parsed commands and set them in order by logical operators, and then fork into child processes to execute |
+| kv_lists1.c	  | Key-value list functions to manage the dictionary approximating data structure used for env variables |
+| kv_lists2.c	  | Key-value list functions to manage the dictionary approximating data structure used for env variables |
+| lexing.c	  | The lexing function to break up raw user input lines into syntax tokens, and its helpers |
+| redirects1.c	  | Functions that handle I/O redirections |
+| redirects2.c	  | Functions that handle I/O redirections |
+| redirects3.c	  | Functions that handle I/O redirections |
 | shell_scripts.c | Script handling functions - check for, open, and manage fds for shell and init scripts |
-| shell_loop.c 	| Main REPL loop function and helpers |
-| st_lists.c	| Syntax token list functions to manage the list structure used to store syntax tokens |
+| shell_loop.c 	  | Main REPL loop function and helpers |
+| st_lists.c	  | Syntax token list functions to manage the list structure used to store syntax tokens |
 | string_utils1.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
 | string_utils2.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
 | string_utils3.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
-| _which.c	| Function that searches for the full executable path for a given command name |
+| _which.c	  | Function that searches for the full executable path for a given command name |
 
 ## Example
 Interactive Mode
@@ -111,17 +111,19 @@ $
 ## Style and Design Limitations
 * 40 lines per function
 * 5 functions per file
+* Global variables prohibited
+* Can be compiled on Ubuntu 14.04 LTS with gcc 4.8.4
 * Allowed syscalls/library functions:
 
-|        |         |             |                  |         |           | 
+|        |         |             |                  |         |           |
 |--------|---------|-------------|------------------|---------|-----------|
 | access | kill    | write       | geteuid          | free    | localtime |
 | chdir  | open    | _exit       | sigaction        | getcwd  | getpwuid  |
 | close  | read    |  dup        | sigemptyset      | getline | isatty    |
 | execve | signal  | dup2        | select           | malloc  | printf    |
-| fork   | wait    |  pipe       | getpid           | opendir | fflush    | 
-| stat   | waitpid | unlink      | __errno_location | perror  | sprintf   | 
-| lstat  | wait3   | time        | closedir         | readdir | fprintf   | 
+| fork   | wait    |  pipe       | getpid           | opendir | fflush    |
+| stat   | waitpid | unlink      | __errno_location | perror  | sprintf   |
+| lstat  | wait3   | time        | closedir         | readdir | fprintf   |
 | fstat  | wait4   | gethostname | exit             | strtok  | vfprintf  |
 
 ## Release History

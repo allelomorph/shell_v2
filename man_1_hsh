@@ -1,64 +1,143 @@
 .TH man 1 "12 Jan 2021" "2.0" "Cascara"
-
 .SH NAME
-Cascara / hsh - a simple command line interface built in C
-
-.SH SYNOPSIS
-Interactive Mode:
 .B hsh
-.I command
-.R [args] ...
-.bb
-Non-Interactive Mode:
-.B echo
-.IR command or script
-.R | hsh
-
+\- (aka Cascara) a simple command line interface (shell)
+.SH SYNOPSIS
+.B hsh
+.R [commmand file]
 .SH DESCRIPTION
 .P
-Cascara is a very simple shell program capable of running commands that can be found in the PATH.
-.P
-It takes user input from stdin. If the input is a valid command, the output of that command is then printed to stdout and any errors to stderr. If the user's input is not a valid command, then Cascara prints the appropriate error message to stdout.
-
-.SS ADDITIONAL COMMANDS
+.B hsh
+/ Cascara is a simple command line interpreter written in C, built to primarily emulate some basic functions of the dash shell (sh) pakcaged with Ubuntu 14.04 LTS, aka dash or the Debian Almquist Shell.
+Some features from bash are also included.
+.SS Overview
+This simple shell is a REPL loop that reads lines from either a file or the terminal, interprets them, and execute any derived commands.
+.SS Invocation
+With no arguments and if the stdin is mapped to a terminal, the shell can be used as an interactive REPL loop.
+A prompt will be given before every command, and errors will be returned for syntax violations, builtin failures, or directly from executables initiated by the shell.
+Alternately, if the calling shell redirects non-terminal input into the hsh shell or the first argument to hsh is present and is a shell script, the shell opens in non-interactive mode, and will interpret the input until EOF is reached.
+.SS Lexical Structure
+The shell reads input in terms of lines from a file and breaks it up into words at whitespace (blanks and tabs), and at certain sequences of characters that are special to the shell called operators. There are two types of operators: control operators and input/output redirection operators (see below). 
+.IP
+Control operators:
+.B && || | ;
+.IP
+I/O redirection operators:
+.B < > << >>
+.SS Commands
+Once a line of raw input has been broken down lexically, if the remaining tokens contain the name of a builtin or some recognizable executable in the filesystem, they can be executed, but not before applying a few parameters if indicated by the included control or redirection operators.
+.SS Redirections
+Redirections are used to change where a command reads its input or sends its output. In general, redirections open, close, or duplicate an existing reference to a file.
+The overall format used for redirection is:
+.IP
+command [args] redir-operator file
+.PP
+Possible redirections include:
+.IP
+> file   Redirect standard output to file.
+.IP
+>> file  Append standard output to file.
+.IP
+< file   Redirect standard input from file.
+.PP
+The last redirection is called a here-document or heredoc. All the text on successive lines up to the delimiter is saved away and made available to the command on standard input.
+.IP
+.EX
+<< delimiter
+        here-doc-text ...
+delimiter
+.EE
+.SS Search and Execution
+There are two types of commands: builtin commands, and normal programs -- and the command is searched for (by name) in that order.
+They each are executed in a different way.
+.PP
+Shell builtins are executed internally to the shell, without spawning a new process.
+.PP
+Otherwise, if the command name doesn't match a builtin, the command is searched for as a normal program in the file system (as described in the next section).
+When a normal program is executed, the shell runs the program, passing the arguments and the environment to the program.
+.SS Path Search
+When locating a command, the shell first looks to see if it has a builtin command by that name.
+If a builtin command is not found, it begins testing possible absolute paths for the executable.
+It does this by searching  each entry ina colon-delimited PATH variable and prepending it to the command path.
+The current directory may be indicated implicitly by an empty directory name, or explicitly by a single period.
+.SS Complex Commands
+Complex commands are combinations of simple commands with control operators, together creating a larger complex command.
+A simple command could be considered one program name, possibly with flags and arguments.
+Redirections are parsed in relation to one simple command at a time and are assigned to one simple command at a time.
+Simple commands can be strung together using control operators into command lists or pipelines.
+Unless otherwise stated, the exit status of a command is that of the last simple command executed by the command.
+.SS Pipelines
+A pipeline is a sequence of one or more commands separated by the control operator |.
+The standard output of all but the last command is connected to the standard input of the next command.
+The standard output of the last command is inherited from the shell, as usual.
+The format for a pipeline is:
+.IP
+[!] command1 [| command2 ...]
+.PP
+The standard output of command1 is connected to the standard input of command2.
+The standard input, standard output, or both of a command is considered to be assigned by the pipeline before any redirection specified by redirection operators that are part of the command.
+The shell waits for all commands to complete before moving to the next segment of the pipeline.
+.PP
+Because pipeline assignment of standard input or standard output or both takes place before redirection, it can be modified by redirection.
+For example:
+.IP
+           $ command1 > file | command2
+.PP
+sends the standard output of command1 to file, and not the standard input of command2.
+.SS Command Lists
+A list is a sequence of zero or more commands separated by semicolons, && or ||.
+The commands in a list are executed in the order they are written.
+The shell waits for a command to terminate before proceeding to the next one.
+.SS Short-Circuit List Operators
+&& and || are AND-OR list operators.
+&& executes the first command, and then executes the second command if the exit status of the first command is zero.
+|| is similar, but executes the second command if the exit status of the first command is nonzero.
+&& and || both have the same priority.
+.SH BUILTIN COMMANDS
 .TP
-.B
-Ctrl + D
-Exit the shell
+.B ctrl + d (EOF)
+Exit the shell with exit code of last executed command, or last error.
 .TP
-.B
-exit
-Use the exit builtin to exit the shell
+.B exit [exit code]
+Exit the shell with exit code of last executed command, or last error.
+If an integer is given as the first argument, then the shell exits with that value % 256.
 .TP
-.B
-env
-Print all of the environmental variables
-
+.B env
+Prints all environmental variables inherited from parent shell or set in this shell.
+.TP
+.B setenv [variable] [value]
+If both variable and value are provided, if the variable exists its value is updated, and if not it is created with that value.
+.TP
+.B unsetenv [variable]
+If variable is provided, removes that varaible from the environment.
+.TP
+.B cd [-] [directory]
+.B cd
+alone changes working directory to $HOME if set in environment.
+.B cd -
+prints the last working directory and moves there.
+.B cd [directory]
+moves to that directory, if accesible.
 .SH EXIT STATUS
+By default, the shell returns the exit code of the last executed builtin or valid binary. Otherwise:
 .TP
-.B
-0
+.B 0
 Success
-
 .TP
-.B
--1
-Failure; should stay internal
-
+.B \-1
+Internal shell failures
 .TP
-.B
-127
-Command not found
-
+.B 2
+Builtin failures
+.TP
+.B 127
+Command not found, or script can't be opened.
 .SH ENVIRONMENT
-.BR PATH - "used to locate the command provided by the user"
-.BR PWD - "if the first element of PATH is blank, PWD is substituted"
-.bb
-All other environment variables are copied into an array at the beginning of the shell to facilitate manipulation in later versions. 
-
+Whatever variables that are inherited from the parent shell.
 .SH BUGS
-Not aware of any currently
-
+.TP
+.B 12-Jan-21 v2.0
+heredoc collection fails past a certain character count, and tilde expansion is not handled.
 .SH EXAMPLE
 
 .SS Interactive Mode
@@ -99,63 +178,15 @@ drwxrwxr-x  8 vagrant vagrant  4096 Apr 17 14:34 .git
 -rwxrwxr-x  1 vagrant vagrant 18275 Apr 17 14:35 hsh
 vagrant@vagrant-ubuntu-trusty-64:~/simple_shell$
 .EE
-
 .SH AUTHOR
 v2.0 Samuel Pomeroy
-
+.PP
+v1.0 Samuel Pomeroy, Cynthia Taylor
 .SH SEE ALSO
-.I sh(1) bash(1)
-
-
-     Cascara / hsh  command interpreter (simple shell)
-
-.SH SYNOPSIS
-.B hsh
-[command_file]
-.SH DESCRIPTION
-.P
-Cascara is a simple command line interpreter written in C, built to primarily emulate some basic functions of the dash shell (sh) pakcaged with Ubuntu 14.04 LTS, aka dash or the Debian Almquist Shell.
-Some features from bash are also included.
-.P
-Overview
-This simple shell is a REPL loop that reads lines from either a file or the terminal, interprets them, and execute any derived commands.
-.P
-Invocation
-With no arguments and if the stdin is mapped to a terminal, the shell can be used as an interactive REPL loop.
-A prompt will be given before every command, and errors will be returned for syntax violations, or directly from executables initiated by the shell.
-.P
-Alternately, if the calling shell redirects non-terminal input into the hsh shell or the first argument to hsh is present and is a shell script, the shell opens in non-interactive mode, and will interpret the input until EOF is reached.
-.P
-Lexical Structure
-.P
-The shell reads input in terms of lines from a file and breaks it up into words at whitespace (blanks and tabs), and at certain sequences of characters that are special to the shell called operators. There are two types of operators: control operators and input/output redirection operators (see below). 
-.TP
-Control operators:
-&& || | ;
-.TP
-I/O redirection operators:
-< > << >>
-.P
-Commands
-.P
-Once a line of raw input has been broken down lexically, if the remaining tokens contain the name of a builtin or some recognizable executable in the filesystem, they can be executed, but not before applying a few parameters if indicated by the included control or redirection operators.
-.P
-Redirections
-.P
-Redirections are used to change where a command reads its input or sends its output. In general, redirections open, close, or duplicate an existing reference to a file.
-The overall format used for redirection is:
-.P
-(command [args] tokens) (redir operator) (file)
-.P
-Possible redirections include:
-.TP
-> file   Redirect standard output to file.
-.TP
->> file  Append standard output to file.
-.TP
-< file   Redirect standard input from file.
-.P
-The last redirection is called a here-document or heredoc. All the text on successive lines up to the delimiter is saved away and made available to the command on standard input.
-           << delimiter
-                 here-doc-text ...
-           delimiter
+.SM
+.B sh
+(1),
+.B dash
+(1),
+.B bash
+(1)
