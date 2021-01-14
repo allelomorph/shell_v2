@@ -58,11 +58,14 @@ void shellLoop(sh_state *state)
 /* _readline: std: isatty printf perror getline free */
 /* _readline: sub: (none) */
 /**
- * _readline -
+ * _readline - prints prompt when in interactive mode, and collects one line of
+ * input: from stdin terminal in interactive mode, or remapped stdin in
+ * non-interactive mode
  *
- * @PS1:
+ * @PS1: true: main prompt use in shellLoop, false: collecting secondary input
  * @state: struct containing information needed globally by most functions
- * Return: , NULL on failure
+ * Return: buffer containing line of input from stdin, NULL on failure or when
+ * EOF reached
  */
 char *_readline(bool PS1, sh_state *state)
 {
@@ -97,7 +100,7 @@ char *_readline(bool PS1, sh_state *state)
 			return (NULL);
 		}
 		if (tty) /* no errors, ctrl+d state */
-		        printf("\n"); /* final \n to exit prompt */
+			printf("\n"); /* final \n to exit prompt */
 		return (NULL); /* signal end of loop */
 	}
 	/* keep newlines for heredocs, remove for main prompt (PS1) */
@@ -107,21 +110,21 @@ char *_readline(bool PS1, sh_state *state)
 }
 
 
-
-
-/* maybe add return value to indicate builtin found instead of arg builtin */
-/* !!! try to coordinate all builtins error handling and exiting through this function */
-
 /* checkBuiltins: std: fprintf */
 /* checkBuiltins: sub: _env __exit _setenv _unsetenv _cd */
 /**
- * checkBuiltins -
+ * checkBuiltins - compares first syntax token of a command against the names
+ * of shell builtins and executes one if matched
  *
- * @st_head:
- * @line:
- * Return:
+ * @st_head: head of syntax token list of current command
+ * @cmd_head: head of current command list, included here to be freed by __exit
+ * @line: user input line, included here to be freed by __exit
+ * @state: struct containing information needed globally by most functions
+ * Return: bool indicating whether a builtin name matching the current
+ * command token was found
  */
-bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *state)
+bool checkBuiltins(st_list *st_head, cmd_list *cmd_head,
+		   char *line, sh_state *state)
 {
 	bool builtin = true;
 	int exit_code = 0;
@@ -164,14 +167,14 @@ bool checkBuiltins(st_list *st_head, cmd_list *cmd_head, char *line, sh_state *s
 }
 
 
-/* bash and sh wait for secondary input when &&/||/| are followed by newline */
-/* "newline unepected" errors returned by sh after incrementing loop counter */
 /* validateSyntax: std: malloc fprintf sprintf */
 /* validateSyntax: sub: getKVPair checkPWD _setenv _strlen changeDir */
 /**
- * validateSyntax -
+ * validateSyntax - scans syntax tokens for any misuse of control or
+ * redirection operators (Note: bash and sh wait for secondary input when
+ * &&/||/| are followed by a newline, but here it causes "newline unexpected")
  *
- * @head:
+ * @head: head of a syntax token list
  * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on failure
  */
@@ -189,7 +192,7 @@ int validateSyntax(st_list *head, sh_state *state)
 	temp = head;
 	while (temp && !bad_op)
 	{
-	        if ((temp->token)[0] == '\0')
+		if ((temp->token)[0] == '\0')
 		{
 			if (temp->next &&
 			    (temp->next->p_op >= ST_CMD_BRK &&
@@ -200,7 +203,7 @@ int validateSyntax(st_list *head, sh_state *state)
 			{ /* sh: newline after redir advances loop count */
 				if ((temp->p_op >= ST_APPEND &&
 				     temp->p_op <= ST_RD_IN))
-				        state->loop_count++;
+					state->loop_count++;
 				bad_op = "newline";
 			}
 			else if ((temp->p_op >= ST_APPEND &&

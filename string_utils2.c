@@ -11,10 +11,11 @@
 /* _strndup: std: malloc fprintf */
 /* _strndup: sub: _strlen */
 /**
- * _strndup - copies n bytes of string + terminating '\0' into newly allocated memory
+ * _strndup - copies n bytes of string + terminating '\0' into newly allocated
+ * memory
  *
  * @str: string to be copied
- * @n:
+ * @n: number of bytes to copy
  * Return: char pointer to new string
  */
 char *_strndup(char *str, unsigned int n)
@@ -26,7 +27,7 @@ char *_strndup(char *str, unsigned int n)
 		return (NULL);
 
 	str_len = _strlen(str);
-        dup_len = (str_len < n) ? str_len : n;
+	dup_len = (str_len < n) ? str_len : n;
 
 	dup = malloc(sizeof(char) * (dup_len + 1));
 	if (!dup)
@@ -60,7 +61,7 @@ char *_strdup(char *str)
 	if (str == NULL)
 		return (NULL);
 
-        len = _strlen(str);
+	len = _strlen(str);
 	dup = malloc(sizeof(char) * (len + 1));
 	if (!dup)
 	{
@@ -77,19 +78,20 @@ char *_strdup(char *str)
 }
 
 
-/* 2 differences with stock strtok:
-1- mulitchar delim arg treated as if entire string is one delim
-2- when delimter found at beginning of string, end of string, or
-two tokens are adjacent in the string, returns "" token instead of skipping.
-*/
 /* strtokSubstr: std: fprintf */
 /* strtokSubstr: sub: _strlen _strncmp */
 /**
- * strtokSubstr -
+ * strtokSubstr - largely similar to library function strtok, returns pointers
+ * substrings found by replacing delimiters found with null bytes.
+ * Two main differences from strtok:
+ * 1 - mulitchar delim arg treated as if entire string is one delim
+ * 2 - when delimter found at beginning of string, end of string, or two delims
+ * are adjacent in the string, returns "" token instead of skipping.
  *
- * @str:
- * @delim:
- * Return: , or NULL on failure
+ * @str: string to subdivide by delimiter; if NULL continue parsing same str
+ * @delim: substring by which to subdivide str
+ * Return: pointer to next token found , or NULL on failure or when no more
+ * tokens are available
  */
 char *strtokSubstr(char *str, char *delim)
 {
@@ -112,8 +114,8 @@ char *strtokSubstr(char *str, char *delim)
 	{
 		if (!nextToken) /* previous save point already at final \0 */
 			return (NULL);
-		else /* still parsing previous string `str` */
-			parseStr = nextToken;
+		/* still parsing previous string `str` */
+		parseStr = nextToken;
 	}
 	delimLen = _strlen(delim);
 	parseStrLen = _strlen(parseStr);
@@ -124,7 +126,7 @@ char *strtokSubstr(char *str, char *delim)
 			if (parseStrLen >= i + delimLen &&
 			    (_strncmp(parseStr + i, delim, delimLen) == 0))
 			{
-			        nextToken = (parseStr + i + delimLen);
+				nextToken = (parseStr + i + delimLen);
 				parseStr[i] = '\0';
 				break;
 			}

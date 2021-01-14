@@ -20,13 +20,12 @@
 /* _which forkProcess restoreStdFDs */
 /**
  * executeCommands - works through a cmd_list in order, skipping commands
- * per sequence operators, and calling subroutines to check if command is
- * builtin and set up any needed I/O redirection
+ * per sequence operators, calling subroutines to check if command is
+ * builtin and setting up any needed I/O redirection
  *
- * @head: 
- * @line: 
+ * @head: first node in a command list
+ * @line: shell input line buffer
  * @state: struct containing information needed globally by most functions
- * Return: 0 on success, 1 on failure
  */
 void executeCommands(cmd_list *head, char *line, sh_state *state)
 {
@@ -58,7 +57,7 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
 		{
 			forkProcess(temp, head, cmd_path, line, state);
 		}
-	        else
+		else
 			restoreStdFDs(state);
 		temp = temp->next;
 	}
@@ -72,10 +71,10 @@ void executeCommands(cmd_list *head, char *line, sh_state *state)
  * forkProcess - once line has been fully lexed and parsed, forkProcess
  * manages the creation of a child process to the shell to execute the command
  *
- * @cmd: 
- * @cmd_head: 
- * @cmd_path: 
- * @line: 
+ * @cmd: current node in command list
+ * @cmd_head: first node in a command list
+ * @cmd_path: absolute path found for current command, if not builtin
+ * @line: shell input line buffer
  * @state: struct containing information needed globally by most functions
  */
 void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path,
@@ -84,7 +83,7 @@ void forkProcess(cmd_list *cmd, cmd_list *cmd_head, char *cmd_path,
 	char **args = NULL, **env = NULL;
 	int status;
 
-	switch(fork())
+	switch (fork())
 	{
 	case -1: /* fork failure */
 		perror("forkProcess: fork error");

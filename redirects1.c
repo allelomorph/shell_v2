@@ -15,12 +15,14 @@
 #include <stdio.h>
 
 
-/* assignIORedirects: std:  */
-/* assignIORedirects: sub:  */
+/* assignIORedirects: std: fprintf  */
+/* assignIORedirects: sub: pipeSegment openOutputFile openInputFile */
+/*setHeredoc setOutputFD */
 /**
- * assignIORedirects -
+ * assignIORedirects - scans current command's syntax tokens for redirects,
+ * calls helpers to set input/ouput fds appropriately
  *
- * @cmd:
+ * @cmd: current command
  * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on failure
  */
@@ -67,14 +69,14 @@ int assignIORedirects(cmd_list *cmd, sh_state *state)
 }
 
 
-/* curr could be any st in cmd, not just the head */
-/* openOutputFile: std:  */
-/* openOutputFile: sub:  */
+/* openOutputFile: std: close perror unlink open */
+/* openOutputFile: sub: cantOpenFileErr */
 /**
- * openOutputFile -
+ * openOutputFile - attempts to open file identified by redirect syntax token,
+ * on success sets command output fd
  *
- * @cmd:
- * @st_curr:
+ * @cmd: current command
+ * @st_curr: current sytnax token in command st_list
  * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on failure
  */
@@ -110,8 +112,7 @@ int openOutputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 		if (cmd->input_fd != -1 &&
 		    close(cmd->input_fd) == -1)
 			perror("assignIORedirects: close error");
-		/* sh does not advance loop count for open errors */
-		state->loop_count--;
+
 		cantOpenFileErr(st_curr->token, state);
 		return (1);
 	}
@@ -119,14 +120,14 @@ int openOutputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 }
 
 
-/* curr could be any st in cmd, not just the head */
-/* openInputFile: std:  */
-/* openInputFile: sub:  */
+/* openInputFile: std: close perror open */
+/* openInputFile: sub: cantOpenFileErr */
 /**
- * openInputFile -
+ * openInputFile - attempts to open file identified by redirect syntax token,
+ * on success sets command input fd
  *
- * @cmd:
- * @st_curr:
+ * @cmd: current command
+ * @st_curr: current sytnax token in command st_list
  * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on failure
  */
@@ -153,8 +154,6 @@ int openInputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 		    close(cmd->output_fd) == -1)
 			perror("assignIORedirects: close error");
 
-		/* sh does not advance loop count for open errors */
-
 		cantOpenFileErr(st_curr->token, state);
 		return (1);
 	}
@@ -163,12 +162,14 @@ int openInputFile(cmd_list *cmd, st_list *st_curr, sh_state *state)
 }
 
 
-/* pipeSegment: std:  */
-/* pipeSegment: sub:  */
+/* pipeSegment: std: fprintf pipe perror */
+/* pipeSegment: sub: (none) */
 /**
- * pipeSegment -
+ * pipeSegment - if pipe control operator found in next command, sets output
+ * of current command to pipe write end and input of next command to pipe
+ * read end
  *
- * @cmd_list:
+ * @cmd: current command in list
  * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on failure
  */

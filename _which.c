@@ -16,11 +16,13 @@
 /* testExecPath: std: malloc fprintf sprintf access perror free */
 /* testExecPath: sub: _strlen */
 /**
- * testExecPath -
+ * testExecPath - prepends the path, if not NULL or empty string, to filename
+ * and tests accessiblity of that combined path
  *
- * @path:
- * @filename:
- * Return: , or NULL on failure
+ * @path: directory path to prepend, expected to come from PATH
+ * @filename: name of file/commmand to be tested
+ * @state: struct containing information needed globally by most functions
+ * Return: first accessible path to filename, or NULL on failure
  */
 char *testExecPath(char *path, char *filename, sh_state *state)
 {
@@ -30,9 +32,9 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 	if (!filename || !state)
 		return (NULL);
 
-	if (!path || strcmp(path, "") == 0)
+	if (!path || path[0] == '\0')
 	{
-	        test_path = _strdup(filename);
+		test_path = _strdup(filename);
 		if (!test_path)
 		{
 			fprintf(stderr, "testExecPath: _strdup failure\n");
@@ -73,7 +75,7 @@ char *testExecPath(char *path, char *filename, sh_state *state)
  * @exec: name of program
  * @state: struct containing information needed globally by most functions
  * Return: string containing full valid path of executable, original
- * av[0] if none found, or NULL on failure
+ * exec if none found, or NULL on failure
  */
 char *_which(char *exec, sh_state *state)
 {
@@ -113,7 +115,7 @@ char *_which(char *exec, sh_state *state)
 		}
 	}
 	free(PATH_cpy);
-        /* no valid path found, return default NULL */
+	/* no valid path found, return default NULL */
 	cmdNotFoundErr(exec, state);
 	return (abs_path);
 }

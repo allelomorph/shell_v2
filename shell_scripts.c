@@ -18,7 +18,8 @@
 /* checkInitScript: std: malloc fprintf sprintf open free */
 /* checkInitScript: sub: getKVpair _strlen */
 /**
- * checkInitScript -
+ * checkInitScript - if initialization script is present, attempts
+ * to open the file and store its fd in the shell state
  *
  * @state: struct containing information needed globally by most functions
  */
@@ -32,7 +33,7 @@ void checkInitScript(sh_state *state)
 	home = getKVPair(state->env_vars, "HOME");
 	if (!home || !(home->key))
 		return;
-/* !!! this expansion of HOME could maybe be generalized while builing var expansion routines */
+/* !!! expansion of HOME could be generalized in var expansion routines */
 	/* append "/.hshrc" to $HOME */
 	home_len = _strlen(home->value);
 	init_path = malloc(sizeof(char) * (home_len + init_len + 2));
@@ -59,9 +60,10 @@ void checkInitScript(sh_state *state)
 /* checkArgScript: std: open fprintf */
 /* checkArgScript: sub: _strdup */
 /**
- * checkArgScript -
+ * checkArgScript - if script is passed to shell as command line arg, attempts
+ * to open the file and store its fd in the shell state
  *
- * @file_path:
+ * @file_path: name of arg script
  * @state: struct containing information needed globally by most functions
  */
 void checkArgScript(char *file_path, sh_state *state)
@@ -74,7 +76,7 @@ void checkArgScript(char *file_path, sh_state *state)
 		cantOpenScriptErr(file_path, state);
 	else
 	{
-	        fp_dup = _strdup(file_path);
+		fp_dup = _strdup(file_path);
 		if (!fp_dup)
 		{
 			fprintf(stderr, "checkArgScript: strdup failure\n");
@@ -88,7 +90,8 @@ void checkArgScript(char *file_path, sh_state *state)
 /* setScriptFds: std: dup perror dup2 close */
 /* setScriptFds: sub: (none) */
 /**
- * setScriptFds -
+ * setScriptFds - backs up inherited stdin fd and maps fd of arg or
+ * initialization script to stdin
  *
  * @state: struct containing information needed globally by most functions
  */
@@ -136,9 +139,11 @@ void setScriptFds(sh_state *state)
 /* unsetScriptFds: std: dup2 perror close */
 /* unsetScriptFds: sub: (none) */
 /**
- * unsetScriptFds -
+ * unsetScriptFds - restores stdin from backup copy after it was remapped by
+ * setScriptFds
  *
  * @state: struct containing information needed globally by most functions
+ * Return: bool to indicate if initialization script has reached EOF
  */
 bool unsetScriptFds(sh_state *state)
 {

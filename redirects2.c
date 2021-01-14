@@ -10,13 +10,14 @@
 #include <stdio.h>
 
 
-/* setHeredoc: std:  */
-/* setHeredoc: sub:  */
+/* setHeredoc: std: fprintf close perror write free */
+/* setHeredoc: sub: _getHeredoc _strlen */
 /**
- * setHeredoc -
+ * setHeredoc - collects heredoc input with getHeredoc, then writes that buffer
+ * to a pipe. The read end of the pipe will be used as stdin for the command
  *
- * @cmd:
- * @delim:
+ * @cmd: curernt command in command list
+ * @delim: heredoc delimiter, indicates end of secondary input
  * @state: struct containing information needed globally by most functions
  * Return: 0 on success, 1 on failure
  */
@@ -65,15 +66,15 @@ int setHeredoc(cmd_list *cmd, char *delim, sh_state *state)
 }
 
 
-/* goes through secondary input loop to store multiline input */
-/* getHeredoc: std:  */
-/* getHeredoc: sub:  */
+/* getHeredoc: std: free */
+/* getHeredoc: sub: _readline emptyCharBuff _strncmp _strcat */
 /**
- * getHeredoc -
+ * getHeredoc - collects input from stdin line by line until delimiter
+ * is matched
  *
- * @delim:
+ * @delim: string to indicate end of heredoc input
  * @state: struct containing information needed globally by most functions
- * Return: 0 on success, 1 on failure
+ * Return: buffer containing heredoc, NULL on failure or empty heredoc
  */
 char *getHeredoc(char *delim, sh_state *state)
 {
@@ -117,13 +118,13 @@ char *getHeredoc(char *delim, sh_state *state)
 }
 
 
-/* emptyCharBuff: std:  */
-/* emptyCharBuff: sub:  */
+/* emptyCharBuff: std: fprintf malloc */
+/* emptyCharBuff: sub: (none) */
 /**
- * emptyCharBuff -
+ * emptyCharBuff - allocates char buffer and initializes all bytes to '\0'
  *
- * @size:
- * Return: , NULL on failure
+ * @size: amount of bytes to allocate
+ * Return: empty buffer, or NULL on failure
  */
 char *emptyCharBuff(unsigned int size)
 {

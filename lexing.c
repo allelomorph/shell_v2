@@ -13,15 +13,19 @@
 /* lineLexer: std: malloc fprintf */
 /* lineLexer: sub: trimComments lexByDelim lexByWhtSpc */
 /**
- * lineLexer -
+ * lineLexer - tokenizes a raw line of shell input into a sytnax token list,
+ * each of which contains a token with only parseable chars and a code
+ * recording the operator immediately preceding the token
  *
- * @line:
+ * @line: line of shell input
  * @state: struct containing information needed globally by most functions
- * Return: , NULL on failure
+ * Return: head of syntax token list, or NULL on failure
  */
 st_list *lineLexer(char *line, sh_state *state)
 {
 	st_list *head = NULL;
+	char *ops[] = {"", ";", "&&", "||", "|", ">>", ">", "<<", "<", NULL};
+	int i;
 
 	(void)state;
 
@@ -41,105 +45,27 @@ st_list *lineLexer(char *line, sh_state *state)
 	head->p_op = ST_NONE;
 	head->next = NULL;
 
-/* !!! can this be a loop that calls enumerated array of args? */
-	/* subdivide token list to record ; occurances */
-	lexByDelim(head, NULL, ";", ST_CMD_BRK);
-	/* subdivide token list to record && occurances */
-	lexByDelim(head, NULL, "&&", ST_ONSCCS);
-	/* subdivide token list to record || occurances */
-	lexByDelim(head, NULL, "||", ST_ONFAIL);
-	/* subdivide token list to record | occurances */
-	lexByDelim(head, NULL, "|", ST_PIPE);
-	/* subdivide token list to record >> occurances */
-	lexByDelim(head, NULL, ">>", ST_APPEND);
-	/* subdivide token list to record > occurances */
-	lexByDelim(head, NULL, ">", ST_RD_OUT);
-	/* subdivide token list to record << occurances */
-	lexByDelim(head, NULL, "<<", ST_HEREDOC);
-	/* subdivide token list to record < occurances */
-	lexByDelim(head, NULL, "<", ST_RD_IN);
+	for (i = ST_CMD_BRK; i < ST_MACRO_CT; i++)
+		lexByDelim(head, NULL, ops[i], i);
 	/* trim whitespace last, potentially NULL token->token */
 	lexByWhtSpc(head, NULL);
 
 	/* expand and fully lex aliases */
 	/* expand variables - only lexed by whitespace */
-/*
-	varExpansion(head, state);
-*/
+/*	varExpansion(head, state); */
+
 	return (head);
 }
 
 
-
-#ifdef ZZZ
-/* !!! unfinished draft*/
-
-int varExpansion(st_list *head, sh_state *state);
-int varExpansion(st_list *head, sh_state *state)
-{
-	st_list *temp = NULL;
-	kv_list *var = NULL;
-	char *key = NULL, *value = NULL;
-	char **var_copies = NULL;
-	int vc_count = 0;
-
-	if (!head || !state)
-		return (1);
-
-	/* since tokenizing mangles the original strings, we need to copy each var value that we use */
-	temp = head;
-	while (temp)
-	{
-		if (temp->token && (temp->token)[0] == '$')
-			vc_count++;
-		temp = temp->next;
-	}
-	var_copies = malloc(sizeof(char *) * (vc_count + 1));
-	if (!var_copies)
-	{
-		fprintf(stderr, "varExpansion: malloc failure\n");
-		return (1);
-	}
-	/* store var/alias copies in state members */
-/* !!! needs to be done separately for sh_vars and env_vars, or all together? */
-
-        for (i = 0; temp; temp = temp->next)
-	{
-		if (temp->token && (temp->token)[0] == '$')
-		{
-			key = (temp->token) + 1;
-		        if ((var = getKVPair(state->env_vars, key)) != NULL)
-				value = _strdup(var->value);
-			else if (_strcmp(temp->token, "$?") == 0)
-				value = _itoa(state->exit_code);
-			else if (_strcmp(temp->token, "$$") == 0)
-				value = _itoa(getpid());
-			else
-				value = _strdup("");
-
-			/* !value protection? */
-			/* set copy in storage to later tokenize by whitespace */
-			var_copies[i] = value;
-			/* token replaced by var value */
-			temp->token = var_copies[i];
-			lexByWhtSpc(temp, temp->next);
-		        i++;
-/* !!! don't forget to free(state->var_copies after execution at end of shellLoop */
-		}
-	}
-
-}
-#endif
-
-
-/* finds first '#' from left of line at the start of a whitespace-delimited token, and reaplces it with a null byte */
 /* trimComments: std: (none) */
 /* trimComments: sub: (none) */
 /**
- * trimComments -
+ * trimComments - simple replacement of first '#' not inside a whitespace-
+ * delimited token with '\0' to allow lexer to ignore command line comments
  *
- * @line:
- * @whtsp:
+ * @line: user input buffer of one command line
+ * @whtsp: string defining set of whitespace chars
  */
 void trimComments(char *line, char *whtsp)
 {
@@ -175,12 +101,14 @@ void trimComments(char *line, char *whtsp)
 /* lexByDelim: std: (none) */
 /* lexByDelim: sub: _strlen strtokSubstr */
 /**
- * lexByDelim -
+ * lexByDelim - moves through syntax token list and further subdivides tokens
+ * by a given delimiter, creating new nodes in the list as necessary. Uses
+ * strtokSubstr and not strtok, so a multichar delim will be exactly matched.
  *
- * @begin:
- * @end:
- * @delim:
- * @p_op_code:
+ * @begin: entry point into syntax token list
+ * @end: last token in list to subdivide
+ * @delim: delimiter string to drive tokenization
+ * @p_op_code: corresponds to delim type, to record syntax in new nodes
  * Return: 0 on success, 1 on failure
  */
 int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
@@ -195,7 +123,7 @@ int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 	curr = begin;
 	while (curr && curr != end)
 	{
-	        token = curr->token;
+		token = curr->token;
 		t_len = _strlen(token);
 		first_subt = strtokSubstr(token, delim);
 
@@ -230,17 +158,19 @@ int lexByDelim(st_list *begin, st_list *end, char *delim, size_t p_op_code)
 
 
 /* break out newSyntaxToken to get this under 40 lines */
-/* largely redundant with lexbyDelim, as I could gernalize to lexByDelim(head, delim, p_op_code, (*tokenizer)) */
-/* in simpler tests I can pass a char *(*tokenizer)(char *, char *) pointer, */
-/* but testing here compiler throws a __restrict__ type error when passing function pointers as args */
-
 /* lexByDelim: std: (none) */
 /* lexByDelim: sub: _strlen strtokSubstr */
 /**
- * lexByWhtSpc -
+ * lexByWhtSpc - moves through syntax token list and further subdivides tokens
+ * by whitespace, creating new nodes in the list as necessary
  *
- * @begin:
- * @end:
+ * Note: largely redundant with lexbyDelim, and could be covered by adding a
+ * function pointer parameter to lexByDelim to indicate use of strtok or
+ * strtokSubstr. This avenue was blocked during development by getting
+ * __restrict__ type errors from gcc when attempting to pass the fp.
+ *
+ * @begin: entry point into syntax token list
+ * @end: last token in list to subdivide
  * Return: 0 on success, 1 on failure
  */
 int lexByWhtSpc(st_list *begin, st_list *end)
@@ -265,7 +195,7 @@ int lexByWhtSpc(st_list *begin, st_list *end)
 			curr = curr->next;
 		}
 		/* length is same if no delims found */
-		else if ((_strlen(first_subt) != t_len))
+		else if (_strlen(first_subt) != t_len)
 		{
 			temp = curr;
 			reentry = curr->next;
@@ -284,9 +214,9 @@ int lexByWhtSpc(st_list *begin, st_list *end)
 				temp->next = new;
 				temp = new;
 			}
-			/* no more subtokens, reached end of sublist, splicing back in */
+			/* no more subtokens, sublist end, splicing back in */
 			temp->next = reentry;
-			/* not a total replacement, we reuse the original node to store the first subtoken */
+			/* reuse the orig node to store the first subtoken */
 			curr->token = first_subt;
 			curr = reentry;
 		}

@@ -49,10 +49,11 @@ int _strcmp(char *s1, char *s2)
 /**
  * _strncmp - compares a given amount of bytes between two strings
  *
- * @str1: first string to compare
- * @str2: second string to compare
+ * @s1: first string to compare
+ * @s2: second string to compare
  * @n: number of bytes to compare
- * Return:
+ * Return: the difference between the ASCII values of the first non-matching
+ * characters, 0 if they match
  */
 int _strncmp(char *s1, char *s2, unsigned int n)
 {
@@ -117,8 +118,8 @@ unsigned int _strlen(char *s)
  */
 char *_strcat(char *dest, char *src)
 {
-        char *d_start = NULL;
-        char *s_start = NULL;
+	char *d_start = NULL;
+	char *s_start = NULL;
 
 	if (!dest || !src)
 	{
@@ -126,27 +127,27 @@ char *_strcat(char *dest, char *src)
 		return (NULL);
 	}
 
-        d_start = dest;
-        s_start = src;
+	d_start = dest;
+	s_start = src;
 
 	/* increment dest to terminal '\0' */
-        while (*dest)
-                dest++;
+	while (*dest)
+		dest++;
 
 	/* increment through src addresses, assigning content to end of dest */
-        while (*src)
-        {
-                *dest = *src;
-                src++;
-                dest++;
-        }
+	while (*src)
+	{
+		*dest = *src;
+		src++;
+		dest++;
+	}
 
 	/* new terminal '\0' */
-        dest++;
-        *dest = '\0';
+	dest++;
+	*dest = '\0';
 
-        dest = d_start;
-        src = s_start;
+	dest = d_start;
+	src = s_start;
 
-        return (dest);
+	return (dest);
 }

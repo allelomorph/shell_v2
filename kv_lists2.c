@@ -10,9 +10,9 @@
 /* freeKVList: std: free */
 /* freeKVList: std: (none) */
 /**
- * freeKVList -
+ * freeKVList - frees all nodes of a key-value list
  *
- * @head:
+ * @head: first node in a key-value list
  */
 void freeKVList(kv_list **head)
 {
@@ -38,10 +38,11 @@ void freeKVList(kv_list **head)
 /* StrArrFromKVList: std: malloc fprintf sprintf */
 /* StrArrFromKVList: sub: _strlen strArrFree */
 /**
- * StrArrFromKVList -
+ * StrArrFromKVList - creates array of env-formatted "key=value" strings
+ * from a key-value list
  *
- * @head:
- * Return: , NULL on failure
+ * @head: first node in a key-value list
+ * Return: array of "key=value" strings, or NULL on failure
  */
 char **StrArrFromKVList(kv_list *head)
 {
@@ -91,10 +92,11 @@ char **StrArrFromKVList(kv_list *head)
 /* KVListFromStrArr: std: (none) */
 /* KVListFromStrArr: sub: addKVListNode */
 /**
- * KVListFromStrArr -
+ * KVListFromStrArr - creates key-value list from an array of env-formatted
+ * "key=value" strings
  *
- * @str_arr:
- * Return: , NULL on failure
+ * @str_arr: array of '=' delimited strings
+ * Return: new key-value list, or NULL on failure
  */
 kv_list *KVListFromStrArr(char **str_arr)
 {

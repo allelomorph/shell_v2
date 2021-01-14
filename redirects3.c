@@ -7,10 +7,11 @@
 #include <stdio.h>
 
 
-/* restoreStdFDs: std:  */
-/* restoreStdFDs: sub:  */
+/* restoreStdFDs: std: perror dup2 close fprintf */
+/* restoreStdFDs: sub: (none) */
 /**
- * restoreStdFDs -
+ * restoreStdFDs - called whenever stdin or stdout need to be restored to their
+ * default "/dev/pts/<n>" after having been redirected in a command
  *
  * @state: struct containing information needed globally by most functions
  */
@@ -56,12 +57,13 @@ void restoreStdFDs(sh_state *state)
 }
 
 
-/* setInputFD: std:  */
-/* setInputFD: sub:  */
+/* setInputFD: std: fprintf perror dup dup2 close */
+/* setInputFD: sub: (none) */
 /**
- * setInputFD -
+ * setInputFD - remaps stdin to file descriptor assigned as redirect for
+ * current command
  *
- * @cmd:
+ * @cmd: current command in command list
  * @state: struct containing information needed globally by most functions
  */
 void setInputFD(cmd_list *cmd, sh_state *state)
@@ -101,12 +103,13 @@ void setInputFD(cmd_list *cmd, sh_state *state)
 }
 
 
-/* setOutputFD: std:  */
-/* setOutputFD: sub:  */
+/* setOutputFD: std: fprintf perror dup dup2 close */
+/* setOutputFD: sub: (none) */
 /**
- * setOutputFD -
+ * setOutputFD - remaps stdout to file descriptor assigned as redirect for
+ * current command
  *
- * @cmd:
+ * @cmd: current command in command list
  * @state: struct containing information needed globally by most functions
  */
 void setOutputFD(cmd_list *cmd, sh_state *state)

@@ -11,11 +11,12 @@
 /* addKVListNode: std: malloc */
 /* addKVListNode: sub: _strdup _strndup freeKVList */
 /**
- * addKVListNode -
+ * addKVListNode - creates new key-value list node from '=' delimited
+ * string, adds new node to end of list
  *
- * @head:
- * @kv_str:
- * Return: , NULL on failure
+ * @head: double pointer to key-value list head
+ * @kv_str: "key=value" string
+ * Return: newly allocated key-value list node, or NULL on failure
  */
 kv_list *addKVListNode(kv_list **head, char *kv_str)
 {
@@ -28,11 +29,9 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 		freeKVList(head);
 		return (NULL);
 	}
-
 	/* init new */
 	new->key = NULL;
 	new->value = NULL;
-
 	/* manually tokenize once since values can contain '=' */
 	for (i = 0; kv_str[i]; i++)
 	{
@@ -44,7 +43,6 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 		}
 	}
 	new->next = NULL;
-
 	/* add to tail of kv_list */
 	if (*head)
 	{
@@ -63,12 +61,13 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 /* addKVPair: std: malloc fprintf free */
 /* addKVPair: sub: _strdup */
 /**
- * addKVPair -
+ * addKVPair - when given the key and value as separate strings, creates
+ * new list node and adds it to head of a key-value list
  *
- * @head:
- * @key:
- * @value:
- * Return: , NULL on failure
+ * @head: double pointer to key-value list head
+ * @key: key name
+ * @value: value for key
+ * Return: newly allocated key-value list node, or NULL on failure
  */
 kv_list *addKVPair(kv_list **head, char *key, char *value)
 {
@@ -110,12 +109,11 @@ kv_list *addKVPair(kv_list **head, char *key, char *value)
 /* getKVPair: std: (none) */
 /* getKVPair: sub: _strcmp */
 /**
- * getKVPair - moves to a new working directory, based on the supplied args and
- * state of the HOME, OLDPWD, and PWD environmental variables
+ * getKVPair - retrieves a key-value list node by a given key
  *
- * @head:
- * @key:
- * Return: , NULL on failure
+ * @head: first node in a key-value list
+ * @key: key to search list by
+ * Return: matching key-value pair, or NULL on failure
  */
 kv_list *getKVPair(kv_list *head, char *key)
 {
@@ -140,10 +138,10 @@ kv_list *getKVPair(kv_list *head, char *key)
 /* removeKVPair: std: free */
 /* removeKVPair: sub: getKVPair */
 /**
- * removeKVPair -
+ * removeKVPair - deletes a key-value pair from a list
  *
- * @head:
- * @key:
+ * @head: double pointer to first node in a key-value list
+ * @key: key to search by
  */
 void removeKVPair(kv_list **head, char *key)
 {

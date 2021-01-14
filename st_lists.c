@@ -3,21 +3,27 @@
 /* fprintf */
 #include <stdio.h>
 
-/* free */
+/* free malloc */
 #include <stdlib.h>
 
 
-/* individual st_list nodes can be freed directly */
+/* freeSTList: std: (none) */
+/* freeSTList: sub: (none) */
+/**
+ * freeSTList - frees all nodes in a syntax token list
+ *
+ * @head: pointer to head of syntax token list
+ */
 void freeSTList(st_list **head)
 {
-        st_list *temp1 = NULL, *temp2 = NULL;
+	st_list *temp1 = NULL, *temp2 = NULL;
 
 	temp1 = *head;
 	while (temp1)
 	{
 		temp2 = temp1->next;
 
-	        /* temp->token is a pointer to a substring, no need to free */
+		/* temp->token is a pointer to a substring, no need to free */
 		free(temp1);
 
 		temp1 = temp2;
@@ -26,7 +32,14 @@ void freeSTList(st_list **head)
 }
 
 
-/* !!! modified to ignore redirection tokens instead of excising them earlier */
+/* STListToArgArr: std: malloc fprintf */
+/* STListToArgArr: sub: (none) */
+/**
+ * STListToArgArr - convert a syntax token list to array of strings
+ *
+ * @head: pointer to head of syntax token list
+ * Return: pointer to array of strings, or NULL on failure
+ */
 char **STListToArgArr(st_list *head)
 {
 	st_list *temp = NULL;
@@ -42,7 +55,7 @@ char **STListToArgArr(st_list *head)
 		temp = temp->next;
 	}
 
-        arg_arr = malloc(sizeof(char *) * (list_len + 1));
+	arg_arr = malloc(sizeof(char *) * (list_len + 1));
 	if (!arg_arr)
 	{
 		fprintf(stderr, "STListToStrArr: malloc failure\n");
@@ -67,6 +80,14 @@ char **STListToArgArr(st_list *head)
 }
 
 
+/* trimEmptyFinalST: std: fprintf free */
+/* trimEmptyFinalST: sub: (none) */
+/**
+ * trimEmptyFinalST - addresses edge case of trailing semicolon in line,
+ * which will generate an empty final token in the st list
+ *
+ * @head: pointer to head of syntax token list
+ */
 void trimEmptyFinalST(st_list *head)
 {
 	st_list *temp = NULL;
@@ -81,7 +102,7 @@ void trimEmptyFinalST(st_list *head)
 	/* in that case, there will be a final empty token */
 
 	/* get second to last token */
-        temp = head;
+	temp = head;
 	while (temp->next && temp->next->next)
 		temp = temp->next;
 
@@ -96,6 +117,17 @@ void trimEmptyFinalST(st_list *head)
 
 }
 
+
+/* STListToCmdList: std: fprintf */
+/* STListToCmdList: sub: trimEmptyFinalST createNewCmd */
+/**
+ * STListToCmdList - parses single syntax token list into list of commands,
+ * separated by control operators
+ *
+ * @s_tokens: head of unparsed syntax token list
+ * @state: struct containing information needed globally by most functions
+ * Return: pointer to head of parsed command list
+ */
 cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state)
 {
 	cmd_list *cmd_head = NULL, *cmd_temp = NULL, *new_cmd = NULL;
@@ -109,10 +141,10 @@ cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state)
 	trimEmptyFinalST(s_tokens);
 	/* start with first command containing all the syntax tokens */
 	if ((new_cmd = createNewCmd()) != NULL)
-	        cmd_head = new_cmd;
-        cmd_head->s_tokens = s_tokens;
+		cmd_head = new_cmd;
+	cmd_head->s_tokens = s_tokens;
 
-        st_temp = s_tokens;
+	st_temp = s_tokens;
 	cmd_temp = cmd_head;
 	while (st_temp)
 	{
@@ -125,7 +157,7 @@ cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state)
 				cmd_temp->next = new_cmd;
 				cmd_temp->next->seq_op = st_temp->next->p_op;
 				/* split token list */
-			        cmd_temp->next->s_tokens = st_temp->next;
+				cmd_temp->next->s_tokens = st_temp->next;
 				st_temp->next = NULL;
 			}
 		}
@@ -141,6 +173,13 @@ cmd_list *STListToCmdList(st_list *s_tokens, sh_state *state)
 }
 
 
+/* testPrSTList: std: fprintf */
+/* testPrSTList: sub: (none) */
+/**
+ * testPrSTList - for use during debugging, prints a syntax token list
+ *
+ * @head: pointer to head of syntax token list
+ */
 void testPrSTList(st_list *head)
 {
 	st_list *temp = NULL;
@@ -161,7 +200,9 @@ void testPrSTList(st_list *head)
 	temp = head;
 	while (temp)
 	{
-		printf("\t\tst_list node @ %p token @ %p:'%s' p_op:%s\n", (void *)temp, (void *)(temp->token), temp->token, p_ops[temp->p_op]);
+		printf("\t\tst_list node @ %p token @ %p:'%s' p_op:%s\n",
+		       (void *)temp, (void *)(temp->token),
+		       temp->token, p_ops[temp->p_op]);
 		temp = temp->next;
 	}
 }
