@@ -58,6 +58,7 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
 }
 
 
+/* breakout addToSLLTail subroutine? optimize by keeping tail in state? */
 /* addKVPair: std: malloc fprintf free */
 /* addKVPair: sub: _strdup */
 /**
@@ -71,7 +72,7 @@ kv_list *addKVListNode(kv_list **head, char *kv_str)
  */
 kv_list *addKVPair(kv_list **head, char *key, char *value)
 {
-	kv_list *new = NULL;
+	kv_list *new = NULL, *temp = NULL;
 
 	if (!head || !key || !value)
 		return (NULL);
@@ -98,9 +99,16 @@ kv_list *addKVPair(kv_list **head, char *key, char *value)
 		free(new);
 		return (NULL);
 	}
-
-	new->next = *head;
-	*head = new;
+	/* add to tail of kv_list */
+	if (*head)
+	{
+		temp = *head;
+		while (temp && temp->next)
+			temp = temp->next;
+		temp->next = new;
+	}
+	else
+		*head = new;
 
 	return (new);
 }
