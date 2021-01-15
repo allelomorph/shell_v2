@@ -75,10 +75,11 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
 	{
 		if (_strcmp(cd_arg, "-") == 0)
 		{
-			if (oldpwd->value)
+			if (oldpwd && oldpwd->value)
 				printf("%s\n", oldpwd->value);
 			else
 				printf("%s\n", pwd->value);
+
 			/* avoids setting PWD to a OLDPWD freed by _setenv */
 			dest = _strdup(dest);
 		}
@@ -86,15 +87,12 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
 		_setenv("OLDPWD", pwd->value, state);
 		_setenv("PWD", dest, state);
 
-		/* two cases copy is made in addition to one from _setenv */
-		if (_strcmp(cd_arg, "-") == 0 || cd_arg[0] == '~')
+		/* case where copy is made in addition to one from _setenv */
+		if (_strcmp(cd_arg, "-") == 0)
 			free(dest);
 
 		return (0);
 	}
-
-	if (cd_arg[0] == '~')
-		free(dest);
 
 	cantCdToErr(cd_arg, state);
 	return (2);
@@ -116,7 +114,12 @@ int _cd(char *dir_name, sh_state *state)
 {
 	kv_list *home = NULL, *pwd = NULL, *oldpwd = NULL;
 	char *dest = NULL;
-	int dest_len = 0;
+
+	if (!state)
+	{
+		fprintf(stderr, "_cd: missing state argument\n");
+		return (1);
+	}
 
 	home = getKVPair(state->env_vars, "HOME");
 	oldpwd = getKVPair(state->env_vars, "OLDPWD");
@@ -136,18 +139,6 @@ int _cd(char *dir_name, sh_state *state)
 			dest = oldpwd->value;
 		else
 			return (_setenv("OLDPWD", pwd->value, state));
-	}
-	else if (dir_name[0] == '~' && home && home->value)
-	{
-		dest_len = (_strlen(dir_name + 1) + _strlen(home->value));
-		dest = malloc(sizeof(char) * (dest_len + 1));
-		if (!dest)
-		{
-			fprintf(stderr, "_cd: malloc failure\n");
-			return (1);
-		}
-		sprintf(dest, "%s%s", home->value, dir_name + 1);
-		dest[dest_len] = '\0';
 	}
 	else /* arg present and not '-' */
 		dest = dir_name;
