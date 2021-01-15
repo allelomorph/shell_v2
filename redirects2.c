@@ -91,7 +91,7 @@ char *getHeredoc(char *delim, sh_state *state)
 	while ((line = _readline(false, state)) != NULL)
 	{
 		line_len = _strlen(line);
-		if (_strncmp(line, delim, line_len - 1) == 0)
+		if (_strncmp(line, delim, _strlen(delim)) == 0)
 		{
 			free(line);
 			break;

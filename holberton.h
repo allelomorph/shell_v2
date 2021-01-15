@@ -250,6 +250,6 @@ char *_strcat(char *dest, char *src);
 /* _which.c */
 char *testExecPath(char *path, char *filename, sh_state *state);
 char *_which(char *cmd, sh_state *state);
-
+bool isPotentialPath(char *token);
 
 #endif /* HOLBERTON_H */
