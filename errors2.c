@@ -28,6 +28,12 @@ void cantOpenScriptErr(char *filename, sh_state *state)
 }
 
 
+/*
+ * slightly indirect syntax with fprintf:
+ * `fprintf(stderr, "%s\n", "No such file");`
+ * instead of `fprintf(stderr, "No such file\n");`
+ * to avoid being compiled by gcc as forbidden function fwrite
+*/
 /* cantOpenFileErr: std: fprintf */
 /* cantOpenFileErr: sub: (none) */
 /**
@@ -56,7 +62,7 @@ void cantOpenFileErr(char *filename, sh_state *state)
 			script_n, state->loop_count,
 			script_n, filename);
 		if (errno == ENOENT) /* sh does not print "or directory" */
-			fprintf(stderr, "No such file\n");
+			fprintf(stderr, "%s\n", "No such file");
 		else
 			perror("");
 	}
@@ -65,7 +71,7 @@ void cantOpenFileErr(char *filename, sh_state *state)
 		fprintf(stderr, "%s: %u: cannot open %s: ",
 			state->exec_name, state->loop_count, filename);
 		if (errno == ENOENT) /* sh does not print "or directory" */
-			fprintf(stderr, "No such file\n");
+			fprintf(stderr, "%s\n", "No such file");
 		else
 			perror("");
 	}

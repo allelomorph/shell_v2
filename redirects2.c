@@ -86,12 +86,17 @@ char *getHeredoc(char *delim, sh_state *state)
 
 	if ((buff = emptyCharBuff(buf_size)) == NULL)
 		return (NULL);
-
+/*
+	printf("\tdelim: '%s'\n", delim);
+*/
 	buf_units++;
 	while ((line = _readline(false, state)) != NULL)
 	{
+/*
+		printf("\tPS2 line: '%s'", line);
+*/
 		line_len = _strlen(line);
-		if (_strncmp(line, delim, line_len - 1) == 0)
+		if (_strncmp(line, delim, _strlen(delim)) == 0)
 		{
 			free(line);
 			break;
