@@ -65,7 +65,13 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 	return (test_path);
 }
 
-
+/*
+ * case: no PATH var and naked command name (not builtin) -
+ *     assigment correction expects:
+ *         command not found error
+ *     bash and sh:
+ *         check by prepending PWD (or just running access() on the naked name)
+ */
 /* _which: std: strtok free */
 /* _which: sub: getKVPair testExecPath _strdup */
 /**
@@ -80,20 +86,22 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 char *_which(char *exec, sh_state *state)
 {
 	char *abs_path = NULL, *PATH_cpy = NULL, *token = NULL;
-	kv_list *pwd = NULL, *path = NULL;
+	kv_list /* *pwd = NULL,*/ *path = NULL;
 
 	if (!exec || !state)
 		return (NULL);
-	/* return unmodified if already accessible */
-	if ((abs_path = testExecPath("", exec, state)) != NULL)
+	/* return unmodified if already accessible path (not if naked cmd) */
+	if (isPotentialPath(exec) &&
+	    (abs_path = testExecPath("", exec, state)) != NULL)
 		return (abs_path);
 	/* search for PWD and PATH */
-	pwd = getKVPair(state->env_vars, "PWD");
+	/* pwd = getKVPair(state->env_vars, "PWD"); */
 	path = getKVPair(state->env_vars, "PATH");
 	/* check PWD first */
-	if (pwd && pwd->value)
-		if ((abs_path = testExecPath(pwd->value, exec, state)) != NULL)
-			return (abs_path);
+/*	if (pwd && pwd->value)
+ *		if ((abs_path = testExecPath(pwd->value, exec, state)) != NULL)
+ *			return (abs_path);
+ */
 	/* (path->value == NULL) will simply fail the first call to strtok */
 	if (path)
 		PATH_cpy = _strdup(path->value);
@@ -118,4 +126,31 @@ char *_which(char *exec, sh_state *state)
 	/* no valid path found, return default NULL */
 	cmdNotFoundErr(exec, state);
 	return (abs_path);
+}
+
+
+/* isPotentialPath: std: (none) */
+/* isPotentialPath: sub: (none) */
+/**
+ * isPotentialPath - screens command name to see if it is without a path or
+ * potentially contains one
+ *
+ * @token: command name from syntax token list
+ * Return: true is command name contains at least one '/', false if not
+ */
+bool isPotentialPath(char *token)
+{
+	int i;
+	bool potential_path = false;
+
+	for (i = 0; token[i]; i++)
+	{
+		if (token[i] == '/')
+		{
+			potential_path = true;
+			break;
+		}
+	}
+
+	return (potential_path);
 }

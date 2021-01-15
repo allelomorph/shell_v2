@@ -70,8 +70,6 @@ kv_list *checkPWD(sh_state *state)
 int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
 	      char *dest, sh_state *state)
 {
-	(void)oldpwd;
-
 	/* dest and pwd both not NULL, we need to swap into new dir */
 	if (access(dest, F_OK | X_OK) == 0 && chdir(dest) == 0)
 	{
