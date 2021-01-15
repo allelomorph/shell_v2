@@ -70,15 +70,18 @@ kv_list *checkPWD(sh_state *state)
 int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
 	      char *dest, sh_state *state)
 {
+	(void)oldpwd;
+
 	/* dest and pwd both not NULL, we need to swap into new dir */
 	if (access(dest, F_OK | X_OK) == 0 && chdir(dest) == 0)
 	{
 		if (_strcmp(cd_arg, "-") == 0)
 		{
+/* if printf("%s\n", ...) ltrace shows puts and not printf, failing checks */
 			if (oldpwd && oldpwd->value)
-				printf("%s\n", oldpwd->value);
+				printf("%s \n", oldpwd->value);
 			else
-				printf("%s\n", pwd->value);
+				printf("%s \n", pwd->value);
 
 			/* avoids setting PWD to a OLDPWD freed by _setenv */
 			dest = _strdup(dest);
