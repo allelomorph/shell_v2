@@ -144,13 +144,15 @@ bool checkBuiltins(st_list *st_head, cmd_list *cmd_head,
 			arg2 = st_head->next->next->token;
 	}
 
-	/* env exit setenv unsetenv cd */
-	/* _env __exit _setenv _unsetenv _cd */
+	/* env exit help setenv unsetenv cd */
+	/* _env __exit _help _setenv _unsetenv _cd */
 
 	if (_strcmp("cd", arg0) == 0)
 		exit_code = _cd(arg1, state);
 	else if (_strcmp("env", arg0) == 0)
 		exit_code = _env(state);
+	else if (_strcmp("help", arg0) == 0)
+		exit_code = _help(arg1);
 	else if (_strcmp("setenv", arg0) == 0)
 		exit_code = _setenv(arg1, arg2, state);
 	else if (_strcmp("unsetenv", arg0) == 0)

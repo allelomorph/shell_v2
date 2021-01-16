@@ -49,29 +49,31 @@ Cascara executable commands that can be found via the PATH, in addtion to severa
 
 ## Included Files
 
-| file 		  | file contents   |
-| --------------- | ----------------------------------------------------------------------------------------- |
-| holberton.h	  | Single header for entire build, contains all struct definitions and function declarations |
-| hsh.c		  | Main and shell state init setup and teardown functions |
-| builtin_cd.c	  | Builtin `cd` and its helper functions |
-| builtins.c 	  | All other shell builtin functions |
-| cmd_lists.c	  | Functions for handling command list structs |
-| errors1.c   	  | Error return functions - mimics `sh` error messages and sets shell exit code |
-| errors2.c	  | Error return functions - mimics `sh` error messages and sets shell exit code |
-| execution.c	  | Functions that take fully lexed and parsed commands and set them in order by logical operators, and then fork into child processes to execute |
-| kv_lists1.c	  | Key-value list functions to manage the dictionary approximating data structure used for env variables |
-| kv_lists2.c	  | Key-value list functions to manage the dictionary approximating data structure used for env variables |
-| lexing.c	  | The lexing function to break up raw user input lines into syntax tokens, and its helpers |
-| redirects1.c	  | Functions that handle I/O redirections |
-| redirects2.c	  | Functions that handle I/O redirections |
-| redirects3.c	  | Functions that handle I/O redirections |
-| shell_scripts.c | Script handling functions - check for, open, and manage fds for shell and init scripts |
-| shell_loop.c 	  | Main REPL loop function and helpers |
-| st_lists.c	  | Syntax token list functions to manage the list structure used to store syntax tokens |
-| string_utils1.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
-| string_utils2.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
-| string_utils3.c | Various string utilities, mostly clones of standard library functions prohibited by assignment |
-| _which.c	  | Function that searches for the full executable path for a given command name |
+| file 		      | file contents   |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| holberton.h	      | Single header for entire build, contains all struct definitions and function declarations |
+| hsh.c		      | Main and shell state init setup and teardown functions |
+| builtin_cd.c	      | Builtin `cd` and its helper functions |
+| builtin_help.c      | Builtin `help` and help text for `help help` |
+| builtin_help_msgs.c | Help text for `help cd` `help env` `help exit` `help setenv` `help unsetenv` |
+| builtins.c 	      | All other shell builtin functions |
+| cmd_lists.c	      | Functions for handling command list structs |
+| errors1.c   	      | Error return functions - mimics `sh` error messages and sets shell exit code |
+| errors2.c	      | Error return functions - mimics `sh` error messages and sets shell exit code |
+| execution.c	      | Functions that take fully lexed and parsed commands and set them in order by logical operators, and then fork into child processes to execute |
+| kv_lists1.c	      | Key-value list functions to manage the dictionary approximating data structure used for env variables |
+| kv_lists2.c	      | Key-value list functions to manage the dictionary approximating data structure used for env variables |
+| lexing.c	      | The lexing function to break up raw user input lines into syntax tokens, and its helpers |
+| redirects1.c	      | Functions that handle I/O redirections |
+| redirects2.c	      | Functions that handle I/O redirections |
+| redirects3.c	      | Functions that handle I/O redirections |
+| shell_scripts.c     | Script handling functions - check for, open, and manage fds for shell and init scripts |
+| shell_loop.c 	      | Main REPL loop function and helpers |
+| st_lists.c	      | Syntax token list functions to manage the list structure used to store syntax tokens |
+| string_utils1.c     | Various string utilities, mostly clones of standard library functions prohibited by assignment |
+| string_utils2.c     | Various string utilities, mostly clones of standard library functions prohibited by assignment |
+| string_utils3.c     | Various string utilities, mostly clones of standard library functions prohibited by assignment |
+| _which.c	      | Function that searches for the full executable path for a given command name |
 
 ## Example
 Interactive Mode

@@ -138,6 +138,16 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
 	      char *dest, sh_state *state);
 int _cd(char *dir_name, sh_state *state);
 
+/* builtin_help.c */
+int _help(char *builtin);
+char *help_help(void);
+
+/* builtin_help_msgs.c */
+char *help_cd(void);
+char *help_env(void);
+char *help_exit(void);
+char *help_setenv(void);
+char *help_unsetenv(void);
 
 /* cmd_lists.c */
 void freeCmdList(cmd_list **head);
