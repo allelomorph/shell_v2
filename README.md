@@ -39,13 +39,243 @@ or by passing a script as an argument:
 ./hsh <scriptname>
 ```
 
-## Commands
-Cascara executable commands that can be found via the PATH, in addtion to several builtins:
-* env
-* setenv
-* unsetenv
-* cd
-* exit
+## Parseable Sytnax
+
+### Executables
+Valid executables in the filesystem can be used as commands, either with their full path:
+```
+Cascara $ /bin/ls
+file1  file2  file3
+```
+or without:
+```
+Cascara $ ls
+file1  file2  file3
+```
+and they can take compatible arguments as well:
+```
+Cascara $ ls -l .
+total 0
+-rw-rw-r-- 1 vagrant vagrant 0 Jan 16 22:25 file1
+-rw-rw-r-- 1 vagrant vagrant 0 Jan 16 22:25 file2
+-rw-rw-r-- 1 vagrant vagrant 0 Jan 16 22:25 file3
+```
+
+### Redirections
+
+#### Output to file
+Standard output of command redirected to file (existing file overwritten):
+```
+Cascara $ echo Holberton School > test
+Cascara $ cat -e test
+Holberton School$
+```
+
+#### Append output to file
+Standard output of command redirected to append to file:
+```
+Cascara $ rm -f test
+Cascara $ echo Holberton School >> test
+Cascara $ cat -e test
+Holberton School$
+Cascara $ echo Holberton School >> test
+Cascara $ cat -e test
+Holberton School$
+Holberton School$
+```
+
+#### Take file as input
+Attempt to read a file and redirect that to standard input of command:
+```
+Cascara $ cat -e small_file
+Holberton$
+Second line$
+Cascara $ rev < small_file
+notrebloH
+enil dnoceS
+```
+
+#### Heredoc
+Collect secondary input from shell stdin and redirect to stdin of command:
+```
+Cascara $ cat -e << HOLBERTON
+> qwertyuiop
+> ls -l
+> cat -e small_file
+> HOLBERTONnope
+> nopeHOLBERTON
+> HOLBERTON
+> HOLBERTON
+qwertyuiop$
+ls -l$
+cat -e small_file$
+HOLBERTONnope$
+nopeHOLBERTON$
+HOLBERTON $
+```
+
+#### Pipes
+A pipe operator appearing between two commands redirects the stdandard output of one command to the standard input of the next (pipe segements can come in series of more than two):
+```
+Cascara $ ls /var | rev
+spukcab
+ehcac
+fehc
+hsarc
+bil
+lacol
+kcol
+gol
+liam
+tpo
+nur
+loops
+pmt
+www
+Cascara $ ls -lr /var | cat -e
+total 48$
+drwxr-xr-x  3 root root   4096 Jan 28  2020 www$
+drwxrwxrwt  2 root root   4096 Nov  7  2019 tmp$
+drwxr-xr-x  5 root root   4096 Nov  7  2019 spool$
+lrwxrwxrwx  1 root root      4 Nov  7  2019 run -> /run$
+drwxr-xr-x  2 root root   4096 Nov  7  2019 opt$
+drwxrwsr-x  2 root mail   4096 Nov  7  2019 mail$
+drwxrwxr-x 13 root syslog 4096 Jan 15 08:18 log$
+lrwxrwxrwx  1 root root      9 Nov  7  2019 lock -> /run/lock$
+drwxrwsr-x  2 root staff  4096 Apr 10  2014 local$
+drwxr-xr-x 60 root root   4096 Oct 15 23:26 lib$
+drwxrwxrwt  2 root root   4096 Jan 15 08:00 crash$
+drwxr-xr-x  3 root root   4096 Jan 28  2020 chef$
+drwxr-xr-x 13 root root   4096 Jan 28  2020 cache$
+drwxr-xr-x  2 root root   4096 Oct 16 06:31 backups$
+Cascara $ echo "Holberton" | wc -c
+12
+```
+
+### Control Operators
+
+#### Command separator
+A semicolon separates two commands to be executed separately, regardless of exit code:
+```
+Cascara $ ls /var ; ls /var
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+Cascara $ ls /hbtn ; ls /var
+ls: cannot access /hbtn: No such file or directory
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+Cascara $ ls /var ; ls /hbtn
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+ls: cannot access /hbtn: No such file or directory
+Cascara $ ls /var ; ls /hbtn ; ls /var ; ls /var
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+ls: cannot access /hbtn: No such file or directory
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+```
+
+#### "On success" separator
+A double ampersand separates two commands to be executed separately, the latter only if the former has an exit code of 0 (can be in series of more than two):
+```
+Cascara $ ls /var && ls /var
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+Cascara $ ls /hbtn && ls /var
+ls: cannot access /hbtn: No such file or directory
+Cascara $ ls /var && ls /var && ls /var && ls /hbtn
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+ls: cannot access /hbtn: No such file or directory
+Cascara $ ls /var && ls /var && ls /var && ls /hbtn && ls /hbtn
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+ls: cannot access /hbtn: No such file or directory
+```
+
+#### "On failure" separator
+A double pipe separates two commands to be executed separately, the latter only if the former has an exit code that is not 0 (can be in series of more than two):
+```
+Cascara $ ls /var || ls /var
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+Cascara $ ls /hbtn || ls /var
+ls: cannot access /hbtn: No such file or directory
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+Cascara $ ls /hbtn || ls /hbtn || ls /hbtn || ls /var
+ls: cannot access /hbtn: No such file or directory
+ls: cannot access /hbtn: No such file or directory
+ls: cannot access /hbtn: No such file or directory
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+Cascara $ ls /hbtn || ls /hbtn || ls /hbtn || ls /var || ls /var
+ls: cannot access /hbtn: No such file or directory
+ls: cannot access /hbtn: No such file or directory
+ls: cannot access /hbtn: No such file or directory
+backups  cache  crash  lib  local  lock  log  mail  metrics  opt  run  spool  tmp
+```
+
+### Comments
+The first hash symbol found in a line causes the rest of the line to be disregarded as a comment, unless it appears in the middle of a token:
+```
+Cascara $ echo Hello # ls -la
+Hello
+Cascara $ echo Hello#Holberton
+Hello#Holberton
+```
+
+## Command Scripts
+
+### Command Line Scripts
+As noted above, one way to use the shell in non-interactive mode is to give it a file as a command line argument. The text in that file will be parsed and executed as if it was from standard input in interactive mode.
+
+### Initialization Script
+If the file `~/.hshrc` is present and accessible at the time of running the shell, it will read and execute the contents of this file before doing anything else.
+
+
+## Builtin Commands
+In addtion to valid executables in the filesystem, there are several builtin shell commands:
+
+### `cd`
+Changes the current working directory
+
+* `cd` : If HOME is defined in the environment, changes current directory to HOME.
+
+* `cd -` : If OLDPWD (the previous working directory) is defined in the environment, changes current directory to OLDPWD.
+
+* `cd [directory]` : If the directory given as an argument exists and is accessible, that becomes the curent directory.
+
+### `exit`
+Directly exits shell, as would ctrl+d or EOF in script; can take an argument for custom exit code.
+
+* `exit` : With no argument, will exit the shell with the exit code of the last builtin, executed command, or error. In general, these would be:
+** 0 for success
+** 1 for failure of executed commands
+** 2 for builtin failures
+** -1 or 127 for shell failures.
+
+* `exit [exit code]` : With an argument, if it can be evaluated as a valid integer, the shell will exit with that value, modulus 256.
+
+### `help`
+Displays concise instructions for shell builtin functions.
+
+* `help` : No arguments gives an overview of all builtins available.
+
+* `help [builtin]` : Adding a builtin name gives instructions for that builtin.
+
+### `env`
+Displays all environmental variables inherited from parent process, plus any set by `setenv`.
+
+* `env` : Takes no arguments, prints all environmental variables in key=value format.
+
+### `setenv`
+Sets a user-defined environmental variable.
+
+setenv [variable] [value]` : When used with two arguments, setenv will attempt to set a variable to the environment with a key/name of the first argument, and a string value of the second. Less than 2 arguments has no effect. Variable names/keys may not include `=`.
+
+### `unsetenv`
+Removes an environmental variable.
+
+* `unsetenv [variable]` : When used with one arguments, unsetenv will remove a variable to the environment. No effect if variable not found.
+
 
 ## Included Files
 
@@ -75,40 +305,6 @@ Cascara executable commands that can be found via the PATH, in addtion to severa
 | string_utils3.c     | Various string utilities, mostly clones of standard library functions prohibited by assignment |
 | _which.c	      | Function that searches for the full executable path for a given command name |
 
-## Example
-Interactive Mode
-```c
-$ ./hsh
-Cascara $ /bin/pwd
-/home/vagrant/shell-playground/joint-draft
-Cascara $ ls -l
-total 76
--rw-rw-r-- 1 vagrant vagrant     0 Apr 15 20:53 1-newfile
--rw-rw-r-- 1 vagrant vagrant   163 Apr 13 17:49 AUTHORS
--rw-rw-r-- 1 vagrant vagrant  2800 Apr 14 18:54 cascara.c
--rw-rw-r-- 1 vagrant vagrant  1774 Apr 13 17:49 holberton.h
--rwxrwxr-x 1 vagrant vagrant 14086 Apr 15 20:50 hsh
--rw-rw-r-- 1 vagrant vagrant  4610 Apr 14 18:54 loop_help.c
--rw-rw-r-- 1 vagrant vagrant 11085 Apr 15 20:37 ls_output
--rw-rw-r-- 1 vagrant vagrant   753 Apr 13 17:49 man_1_simple_shell
--rw-rw-r-- 1 vagrant vagrant   569 Apr 13 22:20 ETC_help.c
--rw-rw-r-- 1 vagrant vagrant  6375 Apr 13 17:49 README.md
--rw-rw-r-- 1 vagrant vagrant  2995 Apr 14 18:54 string_help.c
--rw-rw-r-- 1 vagrant vagrant  4707 Apr 15 20:50 _which.c
-Cascara $ exit
-$
-```
-
-Non-Interactive Mode
-```c
-$ echo ls -l *.c | ./hsh
--rw-rw-r-- 1 vagrant vagrant 2800 Apr 14 18:54 cascara.c
--rw-rw-r-- 1 vagrant vagrant 4610 Apr 14 18:54 loop_help.c
--rw-rw-r-- 1 vagrant vagrant  569 Apr 13 22:20 ETC_help.c
--rw-rw-r-- 1 vagrant vagrant 2995 Apr 14 18:54 string_help.c
--rw-rw-r-- 1 vagrant vagrant 4707 Apr 15 20:50 _which.c
-$
-```
 
 ## Style and Design Limitations
 * 40 lines per function
@@ -128,9 +324,11 @@ $
 | lstat  | wait3   | time        | closedir         | readdir | fprintf   |
 | fstat  | wait4   | gethostname | exit             | strtok  | vfprintf  |
 
+
 ## Release History
 * 1.0 - First release - 17 Apr 2020
 * 2.0 - Update for second year assignment - 12 Jan 2021
+
 
 ## Authors
 ### 2.0
@@ -143,6 +341,7 @@ Holberton School, SF campus, cohort 11 - Low Level and System Algorithm speciali
 * **Cynthia Taylor** - [cg-taylor](github.com/cg-taylor)
 
 Holberton School, SF campus, cohort 11 - 1st trimester final project
+
 
 ## Other Information
 Cascara is the Spanish word for shell.
