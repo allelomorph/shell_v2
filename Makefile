@@ -4,6 +4,8 @@
 CC = gcc
 SRC = hsh.c \
 	builtin_cd.c \
+	builtin_help.c \
+	builtin_help_msgs.c \
 	builtins.c \
 	cmd_lists.c \
 	errors1.c \
