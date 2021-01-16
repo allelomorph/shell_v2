@@ -269,7 +269,7 @@ Displays all environmental variables inherited from parent process, plus any set
 ### `setenv`
 Sets a user-defined environmental variable.
 
-setenv [variable] [value]` : When used with two arguments, setenv will attempt to set a variable to the environment with a key/name of the first argument, and a string value of the second. Less than 2 arguments has no effect. Variable names/keys may not include `=`.
+`setenv [variable] [value]` : When used with two arguments, setenv will attempt to set a variable to the environment with a key/name of the first argument, and a string value of the second. Less than 2 arguments has no effect. Variable names/keys may not include `=`.
 
 ### `unsetenv`
 Removes an environmental variable.
