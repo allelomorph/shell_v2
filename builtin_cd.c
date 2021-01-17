@@ -86,8 +86,7 @@ int changeDir(kv_list *pwd, kv_list *oldpwd, char *cd_arg,
 		}
 		/* _setenv dups its value arg */
 		_setenv("OLDPWD", pwd->value, state);
-		/* dest may incl. unexpanded . or .., must set PWD directly */
-/* !!! */
+/* !!! dest may incl. unexpanded . or .., must set PWD directly with getcwd */
 		_setenv("PWD", dest, state);
 
 		/* case where copy is made in addition to one from _setenv */
