@@ -86,7 +86,7 @@ char *testExecPath(char *path, char *filename, sh_state *state)
 char *_which(char *exec, sh_state *state)
 {
 	char *abs_path = NULL, *PATH_cpy = NULL, *token = NULL;
-	kv_list /* *pwd = NULL,*/ *path = NULL;
+	kv_list *path = NULL;
 
 	if (!exec || !state)
 		return (NULL);
@@ -94,14 +94,8 @@ char *_which(char *exec, sh_state *state)
 	if (isPotentialPath(exec) &&
 	    (abs_path = testExecPath("", exec, state)) != NULL)
 		return (abs_path);
-	/* search for PWD and PATH */
-	/* pwd = getKVPair(state->env_vars, "PWD"); */
+	/* search for PATH */
 	path = getKVPair(state->env_vars, "PATH");
-	/* check PWD first */
-/*	if (pwd && pwd->value)
- *		if ((abs_path = testExecPath(pwd->value, exec, state)) != NULL)
- *			return (abs_path);
- */
 	/* (path->value == NULL) will simply fail the first call to strtok */
 	if (path)
 		PATH_cpy = _strdup(path->value);
