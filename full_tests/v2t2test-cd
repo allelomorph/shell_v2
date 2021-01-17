@@ -1,0 +1,56 @@
+#!/bin/bash
+# v2 task 2 testing
+
+for file in scripts/v2-t2-*; do
+
+    if [ "$file" == "v2-t2-cd-1" ]; then
+        HBUP="$HOME"
+	unset HOME
+    fi
+
+    if [ "$file" == "v2-t2-cd-3" ]; then
+        OPBUP="$OLDPWD"
+	unset OLDPWD
+    fi
+
+    if [ "$file" == "v2-t2-cd-6" ]; then
+        OPBUP="$OLDPWD"
+	OLDPWD=/tmp
+    fi
+
+    if [ "$file" == "v2-t2-cd-7" ]; then
+        HBUP="$HOME"
+        HOME=/tmp
+    fi
+
+    cat <(echo "-->script:") $file <(echo "---")
+    cat $file | sh
+    echo "-->$?"
+    cat $file | ./hsh
+    echo "-->$?"
+    cat $file | valgrind --track-fds=yes --track-fds=yes ./hsh
+
+    echo "-->return or ctrl+d to continue"
+    read
+
+    if [ "$file" == "v2-t2-cd-1" ]; then
+        export HOME="$HBUP"
+	unset HBUP
+    fi
+
+    if [ "$file" == "v2-t2-cd-3" ]; then
+        export OLDPWD="$OPBUP"
+	unset OPBUP
+    fi
+
+    if [ "$file" == "v2-t2-cd-6" ]; then
+        OLDPWD="$OPBUP"
+	unset OPBUP
+    fi
+
+    if [ "$file" == "v2-t2-cd-7" ]; then
+        HOME="$HBUP"
+	unset HBUP
+    fi
+
+done;
