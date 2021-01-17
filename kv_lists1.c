@@ -99,6 +99,8 @@ kv_list *addKVPair(kv_list **head, char *key, char *value)
 		free(new);
 		return (NULL);
 	}
+
+	new->next = NULL;
 	/* add to tail of kv_list */
 	if (*head)
 	{
