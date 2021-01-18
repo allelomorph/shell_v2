@@ -141,7 +141,8 @@ int _cd(char *dir_name, sh_state *state)
 			dest = oldpwd->value;
 		else
 		{
-			printf("%s\n", pwd->value);
+/* if printf("%s\n", ...) ltrace shows puts and not printf, failing checks */
+			printf("%s \n", pwd->value);
 			return (_setenv("OLDPWD", pwd->value, state));
 		}
 	}
