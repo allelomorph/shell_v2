@@ -24,6 +24,7 @@ void shellLoop(sh_state *state)
 	st_list *s_tokens = NULL;
 	cmd_list *commands = NULL;
 	bool init_EOF;
+	int i;
 
 	state->loop_count = 1;
 	do {
@@ -48,11 +49,23 @@ void shellLoop(sh_state *state)
 
 		if (commands)
 			freeCmdList(&commands);
+
 		if (state->var_copies)
 		{
+			printf("state->var_copies @ %p\n", (void *)(state->var_copies));
+		        for (i = 0; (state->var_copies)[i]; i++)
+				printf("state->var_copies[%i] %s\n", i, (state->var_copies)[i]);
 			strArrFree(state->var_copies);
 			state->var_copies = NULL;
 		}
+
+/*
+		if (state->alias_copies)
+		{
+			strArrFree(state->alias_copies);
+			state->alias_copies = NULL;
+		}
+*/
 		if (line)
 			free(line);
 		/* freed pointers will not automatically == NULL */
@@ -149,10 +162,12 @@ bool checkBuiltins(st_list *st_head, cmd_list *cmd_head,
 			arg2 = st_head->next->next->token;
 	}
 
-	/* env exit help setenv unsetenv cd */
-	/* _env __exit _help _setenv _unsetenv _cd */
+	/* alias cd env exit help setenv unsetenv */
+	/* _alias _cd _env __exit _help _setenv _unsetenv */
 
-	if (_strcmp("cd", arg0) == 0)
+	if (_strcmp("alias", arg0) == 0)
+		exit_code = _alias(st_head->next, state);
+	else if (_strcmp("cd", arg0) == 0)
 		exit_code = _cd(arg1, state);
 	else if (_strcmp("env", arg0) == 0)
 		exit_code = _env(state);

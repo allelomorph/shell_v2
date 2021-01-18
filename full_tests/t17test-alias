@@ -2,11 +2,12 @@
 # v1 task 17 testing
 
 for file in scripts/t17-*; do
-    cat <(echo "-->script:") $file <(echo "---")
+    cat <(echo "-->$file:") $file <(echo "---")
     cat $file | sh
     echo "-->$?"
     cat $file | ./hsh
     echo "-->$?"
+    cat $file | ltrace ./hsh 1> /dev/null 2> "ltrc/$(sed 's/^.*\///g' <<< $file)-ltrc"
     cat $file | valgrind --track-fds=yes ./hsh
 
     echo "-->return or ctrl+d to continue"

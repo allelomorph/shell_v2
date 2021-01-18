@@ -3,6 +3,8 @@
 
 CC = gcc
 SRC = hsh.c \
+	alias_expansion.c \
+	builtin_alias.c \
 	builtin_cd.c \
 	builtin_help.c \
 	builtin_help_msgs.c \

@@ -38,9 +38,9 @@ int initShellState(sh_state *state, char *exec_name, char **env)
 	state->exit_code = 0;
 	state->env_vars = env_vars;
 	/* state->sh_vars = sh_vars; */
-	/* state->aliases = NULL; */
+	state->aliases = NULL;
 	state->var_copies = NULL;
-	/* state->alias_copies = NULL; */
+        state->alias_copies = NULL;
 	state->child_stdin_bup = -1;
 	state->child_stdout_bup = -1;
 	state->stdin_bup = -1;
@@ -73,16 +73,16 @@ void freeShellState(sh_state *state)
 	/*
 	 *if (state->sh_vars)
 	 *	freeKVList(&(state->sh_vars));
-	 *
-	 *if (state->aliases)
-	 *	freeKVList(&(state->aliases));
 	 */
+	if (state->aliases)
+		freeKVList(&(state->aliases));
+
 	if (state->var_copies)
 	        strArrFree(state->var_copies);
-	/*
-	 *if (state->alias_copies)
-	 *	strArrFree(state->alias_copies);
-	 */
+
+	if (state->alias_copies)
+		strArrFree(state->alias_copies);
+
 }
 
 

@@ -90,6 +90,8 @@ typedef struct cmd_list_s
  * @exit_code: exit code/return value of last child/builtin/fail condition
  * @env_vars: env inherited from shell parent converted to kv_list
  * @var_copies: copies of var values from current line for lexing by whtspc
+ * @aliases: all aliases set with builtin `alias`
+ * @alias_copies: copies of alias values for full lexing
  * @child_stdin_bup: -1 by default, or backup of input fd before a command
  * @child_stdout_bup: -1 by default, or backup of output fd before a command
  * @stdin_bup: -1 by default, or fd of stdin before execution of script
@@ -108,9 +110,9 @@ typedef struct sh_state_s
 	int exit_code;
 	kv_list *env_vars;
 	/* kv_list *sh_vars; */
-	/* kv_list *aliases; */
+	kv_list *aliases;
         char **var_copies;
-	/* char **alias_copies; * of expanded alias values for full lexing */
+        char **alias_copies;
 	int child_stdin_bup;
 	int child_stdout_bup;
 	int stdin_bup;
@@ -126,11 +128,20 @@ void freeShellState(sh_state *state);
 /* int main(int argc, char **argv, char **env) */
 
 
+/* alias_expansion.c */
+int aliasExpansion(st_list *st_head, sh_state *state);
+
+
 /* builtins.c */
 int _env(sh_state *state);
 void __exit(char *code, char *line, cmd_list *cmd_head, sh_state *state);
 int _setenv(char *var, char *value, sh_state *state);
 int _unsetenv(char *var, sh_state *state);
+
+
+/* bultin_alias.c */
+int _alias(st_list *args_head, sh_state *state);
+void setAlias(char *key_value, sh_state *state);
 
 
 /* builtin_cd.c */
