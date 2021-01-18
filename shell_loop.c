@@ -48,6 +48,11 @@ void shellLoop(sh_state *state)
 
 		if (commands)
 			freeCmdList(&commands);
+		if (state->var_copies)
+		{
+			strArrFree(state->var_copies);
+			state->var_copies = NULL;
+		}
 		if (line)
 			free(line);
 		/* freed pointers will not automatically == NULL */
