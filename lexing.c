@@ -52,7 +52,7 @@ st_list *lineLexer(char *line, sh_state *state)
 
 	/* expand and fully lex aliases */
 	/* expand variables - only lexed by whitespace */
-/*	varExpansion(head, state); */
+	varExpansion(head, state);
 
 	return (head);
 }

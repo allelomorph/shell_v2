@@ -89,6 +89,7 @@ typedef struct cmd_list_s
  * @loop_count: amount of lines entered and fully lexed and parsed
  * @exit_code: exit code/return value of last child/builtin/fail condition
  * @env_vars: env inherited from shell parent converted to kv_list
+ * @var_copies: copies of var values from current line for lexing by whtspc
  * @child_stdin_bup: -1 by default, or backup of input fd before a command
  * @child_stdout_bup: -1 by default, or backup of output fd before a command
  * @stdin_bup: -1 by default, or fd of stdin before execution of script
@@ -108,7 +109,7 @@ typedef struct sh_state_s
 	kv_list *env_vars;
 	/* kv_list *sh_vars; */
 	/* kv_list *aliases; */
-	/* char **env_var_copies; * of variable values for lexing by whtspc */
+        char **var_copies;
 	/* char **alias_copies; * of expanded alias values for full lexing */
 	int child_stdin_bup;
 	int child_stdout_bup;
@@ -255,6 +256,10 @@ int _strcmp(char *s1, char *s2);
 int _strncmp(char *s1, char *s2, unsigned int n);
 unsigned int _strlen(char *s);
 char *_strcat(char *dest, char *src);
+
+
+/* var_expansion.c */
+int varExpansion(st_list *head, sh_state *state);
 
 
 /* _which.c */

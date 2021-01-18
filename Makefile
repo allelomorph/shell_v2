@@ -23,6 +23,7 @@ SRC = hsh.c \
 	string_utils1.c \
 	string_utils2.c \
 	string_utils3.c \
+	var_expansion.c \
 	_which.c
 OBJ = $(SRC:.c=.o)
 NAME = hsh

@@ -1,0 +1,41 @@
+#!/bin/bash
+# v1 task 18 testing
+
+for file in scripts/v2t15-vars-*; do
+
+    if [ "$file" == "scripts/v2t15-vars-0" ]; then
+	export HBTN_ECHO="/bin/echo"
+    fi
+
+    if [ "$file" == "scripts/v2t15-vars-6" ]; then
+	export HBTN_VAR="Holberton School"
+    fi
+
+    if [ "$file" == "scripts/v2t15-vars-7" ]; then
+	export HBTN_DIR="/var"
+    fi
+
+    cat <(echo "-->$file:") $file <(echo "---")
+    cat $file | sh
+    echo "-->$?"
+    cat $file | ./hsh
+    echo "-->$?"
+    cat $file | ltrace ./hsh 1> /dev/null 2> "ltrc/$(sed 's/^.*\///g' <<< $file)-ltrc"
+    cat $file | valgrind --track-fds=yes ./hsh
+
+    echo "-->return or ctrl+d to continue"
+    read
+
+    if [ "$file" == "scripts/v2t15-vars-0" ]; then
+	unset HBTN_ECHO
+    fi
+
+    if [ "$file" == "scripts/v2t15-vars-6" ]; then
+	unset HBTN_VAR
+    fi
+
+    if [ "$file" == "scripts/v2t15-vars-7" ]; then
+	unset HBTN_DIR
+    fi
+
+done;
