@@ -1,3 +1,9 @@
+### Notes
+* This project, also known as [(327) 0x02. C - Shell v2](https://github.com/allelomorph/holbertonschool-system_linux/blob/master/0x02-shell_v2), was created in a repository separate from [`holbertonschool-system_linux`](https://github.com/allelomorph/holbertonschool-system_linux), where the other projects from this section are located.
+* What follows is the original README submitted for the project.
+
+---
+
 # Cascara
 Cascara is a simple command line interpreter written in C, built to primarily emulate the version of sh packaged with Ubuntu 14.04 LTS, aka dash or the Debian Almquist Shell. Some features from bash are also included.
 
